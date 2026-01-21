@@ -1,0 +1,255 @@
+import { useState } from "react";
+import { Layout } from "@/components/Layout";
+import { useFinanceTransactions, useCreateTransaction } from "@/hooks/use-finance";
+import { useCategories } from "@/hooks/use-categories";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Plus, Filter } from "lucide-react";
+import { format } from "date-fns";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { insertFinanceTransactionSchema } from "@shared/schema";
+import { z } from "zod";
+import { cn } from "@/lib/utils";
+
+// Create Form Component
+function CreateTransactionForm({ onSuccess }: { onSuccess: () => void }) {
+  const { mutate, isPending } = useCreateTransaction();
+  const { data: categories } = useCategories();
+  
+  const form = useForm<z.infer<typeof insertFinanceTransactionSchema>>({
+    resolver: zodResolver(insertFinanceTransactionSchema),
+    defaultValues: {
+      type: "EXPENSE",
+      amount: "0",
+      description: "",
+      date: new Date(),
+    },
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit((data) => mutate(data, { onSuccess }))} className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="type"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Type</FormLabel>
+                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select type" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="INCOME">Income</SelectItem>
+                    <SelectItem value="EXPENSE">Expense</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          <FormField
+            control={form.control}
+            name="categoryId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category</FormLabel>
+                <Select 
+                  onValueChange={(val) => field.onChange(Number(val))} 
+                  defaultValue={field.value ? String(field.value) : undefined}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {categories?.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="amount"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Amount</FormLabel>
+              <FormControl>
+                <Input type="number" step="0.01" {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Input {...field} />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="date"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Date</FormLabel>
+              <FormControl>
+                <Input 
+                  type="date" 
+                  value={field.value ? format(new Date(field.value), "yyyy-MM-dd") : ""}
+                  onChange={(e) => field.onChange(new Date(e.target.value))}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? "Saving..." : "Save Transaction"}
+        </Button>
+      </form>
+    </Form>
+  );
+}
+
+export default function Finance() {
+  const [open, setOpen] = useState(false);
+  const [month, setMonth] = useState(format(new Date(), "yyyy-MM"));
+  const { data: transactions, isLoading } = useFinanceTransactions({ month });
+
+  return (
+    <Layout>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8">
+        <div>
+          <h1 className="text-3xl font-display font-bold">Finance</h1>
+          <p className="text-muted-foreground">Manage income and expenses</p>
+        </div>
+        
+        <div className="flex items-center gap-2">
+           <Input 
+             type="month" 
+             value={month} 
+             onChange={(e) => setMonth(e.target.value)} 
+             className="w-40 bg-background"
+           />
+           <Dialog open={open} onOpenChange={setOpen}>
+            <DialogTrigger asChild>
+              <Button className="shadow-lg shadow-primary/20">
+                <Plus className="w-4 h-4 mr-2" />
+                Add New
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>New Transaction</DialogTitle>
+              </DialogHeader>
+              <CreateTransactionForm onSuccess={() => setOpen(false)} />
+            </DialogContent>
+          </Dialog>
+        </div>
+      </div>
+
+      <div className="bg-card border border-border/50 rounded-2xl shadow-sm overflow-hidden">
+        <Table>
+          <TableHeader className="bg-muted/30">
+            <TableRow>
+              <TableHead>Date</TableHead>
+              <TableHead>Description</TableHead>
+              <TableHead>Category</TableHead>
+              <TableHead>Type</TableHead>
+              <TableHead className="text-right">Amount</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+               <TableRow>
+                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading...</TableCell>
+               </TableRow>
+            ) : transactions?.length === 0 ? (
+               <TableRow>
+                 <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No transactions found for this month.</TableCell>
+               </TableRow>
+            ) : (
+              transactions?.map((t) => (
+                <TableRow key={t.id} className="hover:bg-muted/30">
+                  <TableCell className="font-medium text-muted-foreground">{format(new Date(t.date), "MMM dd, yyyy")}</TableCell>
+                  <TableCell>{t.description || "—"}</TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-secondary text-secondary-foreground">
+                      {t.category?.name}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className={cn(
+                      "font-bold text-xs uppercase tracking-wide",
+                      t.type === "INCOME" ? "text-green-600" : "text-red-600"
+                    )}>
+                      {t.type}
+                    </span>
+                  </TableCell>
+                  <TableCell className={cn(
+                    "text-right font-mono font-medium",
+                    t.type === "INCOME" ? "text-green-600" : "text-red-600"
+                  )}>
+                    {t.type === "INCOME" ? "+" : "-"}${Number(t.amount).toFixed(2)}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </Layout>
+  );
+}
