@@ -1,0 +1,124 @@
+You are a senior fullstack engineer. Build a web app called **nextgateLOG** for a transportation **service provider** company (e.g., “A F SILVA TRANSPORTES / AFSILVA”) with **installable PWA support**. The app must be **multi-tenant** so other service-provider companies can also use it, with strict data isolation per tenant.
+
+IMPORTANT RULES
+1) Generate a complete end-to-end working project (frontend + backend + database).
+2) Keep it simple: a functional MVP, no overengineering.
+3) Mobile-first UI (daily use on phones).
+4) PWA is mandatory: manifest + service worker + icons + basic offline fallback (cache assets).
+5) Use email/password authentication.
+6) Multi-tenant is mandatory: every business entity must be isolated by tenant_id.
+7) Money and percentages: store as DECIMAL in the DB.
+8) File attachments: allow PDF/image attachments for Invoices (required) and optional attachments for financial transactions.
+9) Do NOT build external integrations (no BRASPRESS API). Everything is entered manually.
+10) Create initial seed data: 1 sample tenant + 1 admin user + default categories.
+
+STACK (use this stack without asking)
+- Next.js (App Router) + TypeScript
+- Tailwind CSS
+- Prisma ORM
+- Database: PostgreSQL (if unavailable in Replit, automatically fallback to SQLite but keep Prisma)
+- Auth: NextAuth (Auth.js) Credentials (email/password) + bcrypt
+- UI: keep it simple with Tailwind (you may use shadcn/ui if easy; otherwise plain components)
+
+CORRECT TERMINOLOGY
+- Service Provider (Vendor): the company using the system (e.g., AFSILVA).
+- Contracting Company (Client): BRASPRESS (reference only; no integration).
+
+REQUIRED FEATURES (V1)
+A) MULTI-TENANCY (TENANTS)
+- Tenant table (service-provider company) with: name, city/state (optional), urban_percent, trip_percent.
+- Each user belongs to a tenant.
+- If you support users belonging to multiple tenants, add a simple tenant selection screen; otherwise 1 tenant per user is OK for V1.
+
+B) DASHBOARD
+- Cards: Total Income (period), Total Expenses (period), Balance (period).
+- Cards: Current half-month invoice total + “missing invoice” indicator if none exists for current half-month.
+- List: Upcoming salary payments (based on payday day-of-month and “paid this month” status).
+- Simple ranking: estimated revenue per vehicle (based on loadings) for current month.
+
+C) FINANCE (Transactions)
+- CRUD: Income/Expense transactions with category, date, amount, description, optional attachment.
+- Filters: current month and custom date range.
+- Totals header: income, expenses, balance.
+- Default categories: Invoice, Salary, Fuel, Maintenance, Taxes, Other + allow custom categories.
+
+D) INVOICES (Half-month cycles)
+- CRUD invoices with: number (optional), issueDate, competenceMonth (YYYY-MM), periodType (A_01_15 or B_16_END), amount, status (ISSUED/SENT/PAID), REQUIRED attachment (PDF/image).
+- When creating an invoice: automatically create a FinanceTransaction of type INCOME, category Invoice, amount=invoice.amount, date=issueDate, linked back to the invoice.
+- Invoice list with filters by competenceMonth and periodType.
+
+E) EMPLOYEES & SALARIES
+- CRUD employees: name, position(optional), salary, payday(1-31), status active/inactive.
+- “Monthly Payments” screen: choose competenceMonth YYYY-MM (default current month).
+- Show employees list with a “Pay” button.
+- On “Pay”: confirm paymentDate and amount (default = employee salary). Create an EmployeePayment and automatically create a FinanceTransaction of type EXPENSE, category Salary, linked to that payment. Mark as PAID.
+- Prevent duplicates: one payment per employee per competenceMonth.
+
+F) FLEET (Vehicles)
+- CRUD vehicles: nickname/fleetCode (e.g., “Frota 5552”), plate, year, type (TRUCK_3X4, FIORINO, OTHER), status active/inactive, notes.
+
+G) LOADINGS (Estimated revenue per vehicle)
+- CRUD loadings: date, vehicle, type (URBAN/TRIP), grossFreight, optional description.
+- Apply tenant percent automatically based on type (urban_percent or trip_percent).
+- Calculate and store estimatedRevenue = grossFreight * appliedPercent.
+- Report: per vehicle totals by month or custom date range.
+
+PWA (MANDATORY)
+- Provide manifest: name “nextgateLOG”, short_name, theme_color, background_color, display=standalone.
+- Provide icons (placeholders are OK).
+- Provide service worker to cache static assets and a simple offline fallback page.
+- App must be installable on mobile.
+
+AUTHORIZATION / SECURITY
+- Protect all routes behind login.
+- Always filter all data by tenant derived from the logged-in user session.
+- Never accept tenant_id from the client.
+- Hash passwords with bcrypt.
+- Validate all inputs with Zod (or equivalent robust validation).
+
+DATABASE MODEL (Prisma)
+Create Prisma models:
+- Tenant: id, name, city?, state?, urbanPercent, tripPercent, createdAt, updatedAt
+- User: id, tenantId, name, email (unique per tenant), passwordHash, role (ADMIN/OPERATOR), createdAt, updatedAt
+- Category: id, tenantId, name, defaultType (INCOME/EXPENSE/BOTH), isSystem
+- Attachment: id, tenantId, filename, mimeType, sizeBytes, storagePath, createdAt
+- FinanceTransaction: id, tenantId, type (INCOME/EXPENSE), categoryId, date, amount, description?, attachmentId?, invoiceId?, employeePaymentId?, createdAt, updatedAt
+- Invoice: id, tenantId, number?, issueDate, competenceMonth, periodType (A_01_15/B_16_END), amount, status, attachmentId, financeTransactionId, createdAt, updatedAt
+- Employee: id, tenantId, name, position?, salary, payday, status, createdAt, updatedAt
+- EmployeePayment: id, tenantId, employeeId, competenceMonth, paymentDate, amount, status, financeTransactionId, createdAt, updatedAt (unique: tenantId+employeeId+competenceMonth)
+- Vehicle: id, tenantId, nickname, plate, year, type, status, notes?, createdAt, updatedAt
+- Loading: id, tenantId, vehicleId, date, type (URBAN/TRIP), grossFreight, appliedPercent, estimatedRevenue, description?, createdAt, updatedAt
+
+UPLOADS
+- Implement a simple upload system using local filesystem storage in Replit.
+- Store metadata in Attachment and relate attachments to Invoices and optionally FinanceTransactions.
+- Restrict MIME types to PDF and images (png/jpg/webp).
+- Limit size to 20MB.
+
+MINIMUM PAGES/SCREENS
+- Login
+- Dashboard
+- Finance: list + create/edit
+- Invoices: list + create/edit + attachment view
+- Employees: list + create/edit
+- Monthly Payments: monthly view + “Pay” action
+- Vehicles: list + create/edit
+- Loadings: list + create/edit + per-vehicle report
+
+SEED DATA (MANDATORY)
+- Create 1 tenant: “A F SILVA TRANSPORTES”
+- Sample percents: urban=0.109, trip=0.085 (example only)
+- Create 1 ADMIN user:
+  email: admin@nextgatelog.local
+  password: admin123 (dev only)
+- Create default categories: Invoice, Salary, Fuel, Maintenance, Taxes, Other
+
+EXPECTED OUTPUT
+1) A working app that runs.
+2) README instructions: how to run, migrations, seed.
+3) CRUDs working.
+4) PWA installable.
+
+IMPORTANT
+- Do not ask questions: make reasonable assumptions and implement.
+- Prioritize delivering a functional MVP with good mobile UX.
