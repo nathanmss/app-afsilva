@@ -11,7 +11,11 @@ FROM node:20-bookworm-slim AS runtime
 
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends curl \
+  && rm -rf /var/lib/apt/lists/* \
+  && npm ci --omit=dev --no-audit --no-fund \
+  && npm cache clean --force
 
 ENV NODE_ENV=production
 
