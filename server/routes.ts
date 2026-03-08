@@ -15,6 +15,7 @@ import { asyncHandler, HttpError } from "./http";
 import { USER_ROLES } from "@shared/schema";
 import { normalizeCpf } from "@shared/cpf";
 import { normalizeCnpj } from "@shared/cnpj";
+import { extractInvoiceDraftFromFile } from "./invoice-extraction";
 
 const pgSession = MongoStore(session);
 
@@ -86,7 +87,7 @@ export async function registerRoutes(
       maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
       httpOnly: true,
       sameSite: "lax",
-      secure: isProduction,
+      secure: isProduction ? "auto" : false,
     },
   }));
 
@@ -227,6 +228,32 @@ export async function registerRoutes(
       storagePath: '/uploads/' + req.file.filename,
     });
     res.status(201).json(attachment);
+  }));
+  app.post(api.invoices.extract.path, requireRoles("ADMIN"), upload.single('file'), asyncHandler(async (req, res) => {
+    if (!req.file) {
+      throw new HttpError(400, "No file uploaded");
+    }
+
+    const tenantId = getCurrentUser(req).tenantId;
+    const attachment = await storage.createAttachment({
+      tenantId,
+      filename: req.file.originalname,
+      mimeType: req.file.mimetype,
+      sizeBytes: req.file.size,
+      storagePath: '/uploads/' + req.file.filename,
+    });
+
+    const { draft, warnings } = await extractInvoiceDraftFromFile({
+      path: req.file.path,
+      filename: req.file.originalname,
+      mimetype: req.file.mimetype,
+    });
+
+    res.json({
+      attachment,
+      draft,
+      warnings,
+    });
   }));
 
   // Dashboard

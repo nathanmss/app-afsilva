@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
-import { useCreateInvoice, useInvoices, useUploadAttachment } from "@/hooks/use-invoices";
+import { useCreateInvoice, useExtractInvoiceDraft, useInvoices } from "@/hooks/use-invoices";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { FileText, Link2, Plus, Upload } from "lucide-react";
+import { AlertCircle, FileText, Link2, Plus, Upload } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertInvoiceSchema, INVOICE_PERIODS, INVOICE_STATUS } from "@shared/schema";
@@ -45,10 +45,12 @@ function getDefaultPeriodType() {
 
 function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
   const { toast } = useToast();
-  const { mutateAsync: uploadAttachment, isPending: isUploading } = useUploadAttachment();
+  const { mutateAsync: extractInvoiceDraft, isPending: isExtracting } = useExtractInvoiceDraft();
   const { mutateAsync: createInvoice, isPending: isCreating } = useCreateInvoice();
   const [file, setFile] = useState<File | null>(null);
-  const isPending = isUploading || isCreating;
+  const [attachmentId, setAttachmentId] = useState<number | null>(null);
+  const [warnings, setWarnings] = useState<string[]>([]);
+  const isPending = isExtracting || isCreating;
 
   const form = useForm<z.infer<typeof invoiceFormSchema>>({
     resolver: zodResolver(invoiceFormSchema),
@@ -63,23 +65,24 @@ function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
   });
 
   async function onSubmit(values: z.infer<typeof invoiceFormSchema>) {
-    if (!file) {
+    if (!file || !attachmentId) {
       toast({
-        title: "Anexo obrigatório",
-        description: "Envie o PDF ou imagem da nota fiscal antes de salvar.",
+        title: "Leitura obrigatoria",
+        description: "Envie a nota fiscal e clique em 'Ler Nota Fiscal' antes de salvar.",
         variant: "destructive",
       });
       return;
     }
 
-    const attachment = await uploadAttachment(file);
     await createInvoice({
       ...values,
-      attachmentId: attachment.id,
+      attachmentId,
       number: values.number?.trim() || null,
     });
 
     setFile(null);
+    setAttachmentId(null);
+    setWarnings([]);
     form.reset({
       number: "",
       issueDate: new Date(),
@@ -91,16 +94,77 @@ function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
     onSuccess();
   }
 
+  async function handleExtract() {
+    if (!file) {
+      toast({
+        title: "Anexo obrigatório",
+        description: "Selecione o arquivo da nota fiscal para iniciar a leitura.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const extracted = await extractInvoiceDraft(file);
+    setAttachmentId(extracted.attachment.id);
+    setWarnings(extracted.warnings);
+
+    if (extracted.draft.number) {
+      form.setValue("number", extracted.draft.number);
+    }
+    if (extracted.draft.amount) {
+      form.setValue("amount", extracted.draft.amount);
+    }
+    if (extracted.draft.issueDate) {
+      form.setValue("issueDate", new Date(extracted.draft.issueDate));
+    }
+    if (extracted.draft.competenceMonth) {
+      form.setValue("competenceMonth", extracted.draft.competenceMonth);
+    }
+    form.setValue("periodType", extracted.draft.periodType);
+    form.setValue("status", extracted.draft.status);
+  }
+
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <div className="space-y-2">
+          <FormLabel>1. Envie a nota fiscal</FormLabel>
+          <Input
+            type="file"
+            accept="application/pdf,image/png,image/jpeg,image/webp"
+            onChange={(event) => {
+              setFile(event.target.files?.[0] ?? null);
+              setAttachmentId(null);
+              setWarnings([]);
+            }}
+          />
+          <p className="text-sm text-muted-foreground">
+            O sistema faz a leitura do PDF e preenche os campos automaticamente quando possivel.
+          </p>
+          <Button type="button" variant="secondary" className="w-full font-semibold" disabled={isPending || !file} onClick={handleExtract}>
+            {isExtracting ? "Lendo nota..." : "Ler Nota Fiscal"}
+          </Button>
+        </div>
+
+        {warnings.length > 0 && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 space-y-2">
+            <div className="flex items-center gap-2 font-medium">
+              <AlertCircle className="w-4 h-4" />
+              <span>Revise os campos extraidos</span>
+            </div>
+            {warnings.map((warning) => (
+              <p key={warning}>{warning}</p>
+            ))}
+          </div>
+        )}
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="number"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Número da nota</FormLabel>
+                <FormLabel>2. Numero da nota</FormLabel>
                 <FormControl>
                   <Input placeholder="Ex: 000123" {...field} value={field.value ?? ""} />
                 </FormControl>
@@ -129,7 +193,7 @@ function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
             name="issueDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Data de emissão</FormLabel>
+                <FormLabel>3. Data de emissao</FormLabel>
                 <FormControl>
                   <Input
                     type="date"
@@ -202,20 +266,8 @@ function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
           />
         </div>
 
-        <div className="space-y-2">
-          <FormLabel>Anexo da nota fiscal</FormLabel>
-          <Input
-            type="file"
-            accept="application/pdf,image/png,image/jpeg,image/webp"
-            onChange={(event) => setFile(event.target.files?.[0] ?? null)}
-          />
-          <p className="text-sm text-muted-foreground">
-            Obrigatório. Aceita PDF, JPG, PNG e WEBP até 20MB.
-          </p>
-        </div>
-
         <Button type="submit" className="w-full font-semibold" disabled={isPending}>
-          {isPending ? "Salvando..." : "Salvar Nota Fiscal"}
+          {isPending ? "Salvando..." : "4. Confirmar e Salvar Nota Fiscal"}
         </Button>
       </form>
     </Form>

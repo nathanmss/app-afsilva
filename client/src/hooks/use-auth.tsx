@@ -22,7 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: user, error, isLoading } = useQuery({
     queryKey: [api.auth.me.path],
     queryFn: async () => {
-      const res = await fetch(api.auth.me.path);
+      const res = await fetch(api.auth.me.path, { credentials: "include" });
       if (res.status === 401) return null;
       if (!res.ok) throw new Error("Failed to fetch user");
       return await res.json();
@@ -36,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         method: api.auth.login.method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(credentials),
+        credentials: "include",
       });
       if (!res.ok) {
         const error = await res.json();
@@ -58,7 +59,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      await fetch(api.auth.logout.path, { method: api.auth.logout.method });
+      await fetch(api.auth.logout.path, { method: api.auth.logout.method, credentials: "include" });
     },
     onSuccess: () => {
       queryClient.setQueryData([api.auth.me.path], null);

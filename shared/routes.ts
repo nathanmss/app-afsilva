@@ -147,6 +147,25 @@ export const api = {
         403: errorSchemas.forbidden,
       },
     },
+    extract: {
+      method: 'POST' as const,
+      path: '/api/invoices/extract',
+      responses: {
+        200: z.object({
+          attachment: z.custom<typeof attachments.$inferSelect>(),
+          draft: z.object({
+            number: z.string().nullable(),
+            issueDate: z.string().nullable(),
+            competenceMonth: z.string().nullable(),
+            periodType: z.enum(['A_01_15', 'B_16_END']),
+            amount: z.string().nullable(),
+            status: z.enum(['ISSUED', 'SENT', 'PAID']),
+          }),
+          warnings: z.array(z.string()),
+        }),
+        403: errorSchemas.forbidden,
+      },
+    },
   },
   employees: {
     list: {

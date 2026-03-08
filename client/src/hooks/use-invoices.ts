@@ -86,3 +86,37 @@ export function useUploadAttachment() {
     },
   });
 }
+
+export function useExtractInvoiceDraft() {
+  const { toast } = useToast();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(api.invoices.extract.path, {
+        method: api.invoices.extract.method,
+        body: formData,
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        if (res.status === 401) {
+          throw new Error("Sessao expirada. Faca login novamente.");
+        }
+        throw new Error(error?.message || "Failed to extract invoice draft");
+      }
+
+      return api.invoices.extract.responses[200].parse(await res.json());
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao ler nota fiscal",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
