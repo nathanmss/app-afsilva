@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nextgatelog-v1';
+const CACHE_NAME = 'afsilva-v1';
 const ASSETS = [
   '/',
   '/index.html',

@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@shared/routes";
 import { insertEmployeeSchema, insertEmployeePaymentSchema } from "@shared/schema";
 import { z } from "zod";
+import { useToast } from "@/hooks/use-toast";
 
 export function useEmployees() {
   return useQuery({
@@ -15,6 +16,7 @@ export function useEmployees() {
 }
 
 export function useCreateEmployee() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: z.infer<typeof insertEmployeeSchema>) => {
@@ -24,10 +26,26 @@ export function useCreateEmployee() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to create employee");
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.message || "Failed to create employee");
+      }
       return api.employees.create.responses[201].parse(await res.json());
     },
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: [api.employees.list.path] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.employees.list.path] });
+      toast({
+        title: "Funcionário cadastrado",
+        description: "Login pelo CPF e senha inicial com os 4 últimos dígitos do CPF.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao cadastrar funcionário",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 }
 
@@ -44,6 +62,7 @@ export function useEmployeePayments(competenceMonth: string) {
 }
 
 export function usePayEmployee() {
+  const { toast } = useToast();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async (data: z.infer<typeof insertEmployeePaymentSchema>) => {
@@ -53,12 +72,26 @@ export function usePayEmployee() {
         body: JSON.stringify(data),
         credentials: "include",
       });
-      if (!res.ok) throw new Error("Failed to record payment");
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.message || "Failed to record payment");
+      }
       return api.employees.pay.responses[201].parse(await res.json());
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [api.employees.getPayments.path] });
       queryClient.invalidateQueries({ queryKey: [api.finance.list.path] });
+      toast({
+        title: "Pagamento registrado",
+        description: "A folha do funcionário foi lançada com sucesso.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao registrar pagamento",
+        description: error.message,
+        variant: "destructive",
+      });
     },
   });
 }

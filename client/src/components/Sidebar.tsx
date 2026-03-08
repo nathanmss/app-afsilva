@@ -15,32 +15,37 @@ import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { USER_ROLES } from "@shared/schema";
 
 const links = [
-  { href: "/", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/finance", label: "Finance", icon: Wallet },
-  { href: "/invoices", label: "Invoices", icon: FileText },
-  { href: "/loadings", label: "Loadings", icon: Package },
-  { href: "/vehicles", label: "Vehicles", icon: Truck },
-  { href: "/employees", label: "Employees", icon: Users },
+  { href: "/", label: "Painel", icon: LayoutDashboard },
+  { href: "/finance", label: "Financeiro", icon: Wallet },
+  { href: "/invoices", label: "Notas Fiscais", icon: FileText },
+  { href: "/loadings", label: "Cargas", icon: Package },
+  { href: "/vehicles", label: "Veículos", icon: Truck },
+  { href: "/employees", label: "Funcionários", icon: Users },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
   const { logoutMutation, user } = useAuth();
   const [open, setOpen] = useState(false);
+  const visibleLinks =
+    user?.role === USER_ROLES.OPERATOR
+      ? links.filter((link) => link.href === "/loadings")
+      : links;
 
   const NavContent = () => (
     <div className="flex flex-col h-full py-4">
       <div className="px-6 mb-8 flex items-center gap-3">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <Truck className="w-5 h-5 text-primary-foreground" />
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-white p-1">
+          <img src="/favicon.png" alt="AF Silva Logo" className="w-full h-full object-contain" />
         </div>
-        <span className="font-display font-bold text-xl tracking-tight">FleetMgr</span>
+        <span className="font-display font-bold text-xl tracking-tight">AF Silva Transportes</span>
       </div>
 
       <nav className="space-y-1 px-3 flex-1">
-        {links.map((link) => {
+        {visibleLinks.map((link) => {
           const Icon = link.icon;
           const isActive = location === link.href;
           return (
@@ -64,7 +69,9 @@ export function Sidebar() {
 
       <div className="px-3 mt-auto">
         <div className="bg-card border border-border/50 rounded-xl p-4 mb-4">
-          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">Signed in as</p>
+          <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-1">
+            {user?.role === USER_ROLES.ADMIN ? "Administrador" : "Operador"}
+          </p>
           <p className="font-semibold truncate">{user?.name}</p>
         </div>
         <Button 
@@ -73,7 +80,7 @@ export function Sidebar() {
           onClick={() => logoutMutation.mutate()}
         >
           <LogOut className="w-5 h-5 mr-3" />
-          Logout
+          Sair do Sistema
         </Button>
       </div>
     </div>
@@ -89,10 +96,10 @@ export function Sidebar() {
       {/* Mobile Trigger */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border p-4 flex items-center justify-between">
          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Truck className="w-5 h-5 text-primary-foreground" />
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white p-0.5">
+              <img src="/favicon.png" alt="AF Silva Logo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-display font-bold text-lg">FleetMgr</span>
+            <span className="font-display font-bold text-lg">AF Silva Transportes</span>
          </div>
          <Sheet open={open} onOpenChange={setOpen}>
             <SheetTrigger asChild>

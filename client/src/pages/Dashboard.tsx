@@ -10,6 +10,7 @@ import {
   Truck
 } from "lucide-react";
 import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -20,7 +21,10 @@ export default function Dashboard() {
   const { data: ranking, isLoading: rankingLoading } = useRanking(currentMonth);
 
   const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val);
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+
+  const displayMonth = format(new Date(), "MMMM yyyy", { locale: ptBR });
+  const capitalizedMonth = displayMonth.charAt(0).toUpperCase() + displayMonth.slice(1);
 
   if (statsLoading || rankingLoading) {
     return (
@@ -39,36 +43,36 @@ export default function Dashboard() {
     <Layout>
       <div className="mb-8 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-display font-bold text-foreground">Dashboard</h1>
-          <p className="text-muted-foreground">Overview for {format(new Date(), "MMMM yyyy")}</p>
+          <h1 className="text-3xl font-display font-bold text-foreground">Painel Operacional</h1>
+          <p className="text-muted-foreground">Resumo financeiro e operacional de {capitalizedMonth}</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <StatCard
-          title="Total Income"
+          title="Receita Total"
           value={formatCurrency(stats?.income || 0)}
           icon={<TrendingUp className="w-6 h-6" />}
           className="border-green-100 bg-green-50/50"
         />
         <StatCard
-          title="Total Expenses"
+          title="Despesas Totais"
           value={formatCurrency(stats?.expenses || 0)}
           icon={<CreditCard className="w-6 h-6" />}
           className="border-red-100 bg-red-50/50"
         />
         <StatCard
-          title="Net Balance"
+          title="Saldo Líquido"
           value={formatCurrency(stats?.balance || 0)}
           icon={<DollarSign className="w-6 h-6" />}
-          subValue={stats?.missingInvoice ? "⚠️ Invoices missing for some transactions" : "All invoices accounted for"}
+          subValue={stats?.missingInvoice ? "⚠️ Faltam notas fiscais para algumas transações" : "Todas as notas fiscais estão em dia"}
         />
       </div>
 
       {stats?.missingInvoice && (
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-8 flex items-center gap-3 text-amber-800">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          <p className="font-medium text-sm">Action Required: Some transactions are missing invoices.</p>
+          <p className="font-medium text-sm">Ação Necessária: Há transações registradas sem nota fiscal anexada.</p>
         </div>
       )}
 
@@ -77,7 +81,7 @@ export default function Dashboard() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5 text-yellow-500" />
-              Vehicle Performance
+              Desempenho da Frota
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -86,7 +90,7 @@ export default function Dashboard() {
                 <BarChart data={ranking || []}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis dataKey="nickname" stroke="#64748B" fontSize={12} tickLine={false} axisLine={false} />
-                  <YAxis stroke="#64748B" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `$${val}`} />
+                  <YAxis stroke="#64748B" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `R$ ${val}`} />
                   <Tooltip 
                     cursor={{fill: '#F1F5F9'}}
                     contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -100,7 +104,7 @@ export default function Dashboard() {
 
         <Card className="border-border/50 shadow-md shadow-black/5">
           <CardHeader>
-            <CardTitle>Top Earners</CardTitle>
+            <CardTitle>Veículos em Destaque</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">

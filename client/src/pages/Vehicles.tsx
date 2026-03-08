@@ -56,9 +56,9 @@ function CreateVehicleForm({ onSuccess }: { onSuccess: () => void }) {
             name="nickname"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Nickname</FormLabel>
+                <FormLabel>Nome / Apelido do Veículo</FormLabel>
                 <FormControl>
-                  <Input placeholder="Big Red" {...field} />
+                  <Input placeholder="Ex: Caminhão Baú 01" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -71,7 +71,7 @@ function CreateVehicleForm({ onSuccess }: { onSuccess: () => void }) {
             name="plate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>License Plate</FormLabel>
+                <FormLabel>Placa</FormLabel>
                 <FormControl>
                   <Input placeholder="ABC-1234" {...field} />
                 </FormControl>
@@ -84,7 +84,7 @@ function CreateVehicleForm({ onSuccess }: { onSuccess: () => void }) {
             name="year"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Year</FormLabel>
+                <FormLabel>Ano</FormLabel>
                 <FormControl>
                   <Input type="number" {...field} onChange={e => field.onChange(parseInt(e.target.value))} />
                 </FormControl>
@@ -99,17 +99,17 @@ function CreateVehicleForm({ onSuccess }: { onSuccess: () => void }) {
             name="type"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Type</FormLabel>
+                <FormLabel>Tipo de Veículo</FormLabel>
                 <Select onValueChange={field.onChange} defaultValue={field.value}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select type" />
+                      <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="TRUCK_3X4">Truck 3x4</SelectItem>
-                    <SelectItem value="FIORINO">Fiorino</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
+                    <SelectItem value="TRUCK_3X4">Caminhão 3/4</SelectItem>
+                    <SelectItem value="FIORINO">Fiorino / Van</SelectItem>
+                    <SelectItem value="OTHER">Outro</SelectItem>
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -117,8 +117,8 @@ function CreateVehicleForm({ onSuccess }: { onSuccess: () => void }) {
             )}
           />
 
-        <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? "Creating..." : "Create Vehicle"}
+        <Button type="submit" className="w-full font-semibold" disabled={isPending}>
+          {isPending ? "Cadastrando..." : "Cadastrar Veículo"}
         </Button>
       </form>
     </Form>
@@ -133,19 +133,19 @@ export default function Vehicles() {
     <Layout>
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-display font-bold">Vehicles</h1>
-          <p className="text-muted-foreground">Manage fleet</p>
+          <h1 className="text-3xl font-display font-bold text-foreground">Veículos</h1>
+          <p className="text-muted-foreground">Gestão da frota operacional</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="shadow-lg shadow-primary/20">
+            <Button className="shadow-lg shadow-primary/20 font-semibold">
               <Plus className="w-4 h-4 mr-2" />
-              Add Vehicle
+              Novo Veículo
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Add New Vehicle</DialogTitle>
+              <DialogTitle>Cadastrar Novo Veículo</DialogTitle>
             </DialogHeader>
             <CreateVehicleForm onSuccess={() => setOpen(false)} />
           </DialogContent>
@@ -154,7 +154,7 @@ export default function Vehicles() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {isLoading ? (
-          <p>Loading...</p>
+          <p className="text-muted-foreground">Carregando frota...</p>
         ) : vehicles?.map((vehicle) => (
           <Card key={vehicle.id} className="hover:shadow-lg transition-shadow duration-300 border-border/50">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -164,20 +164,27 @@ export default function Vehicles() {
             <CardContent className="space-y-4">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Hash className="w-4 h-4" />
-                <span className="font-mono bg-muted px-2 py-0.5 rounded text-foreground">{vehicle.plate}</span>
+                <span className="font-mono bg-muted px-2 py-0.5 rounded text-foreground font-medium">{vehicle.plate}</span>
               </div>
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Calendar className="w-4 h-4" />
-                <span>{vehicle.year} • {vehicle.type}</span>
+                <span>{vehicle.year} • {vehicle.type === 'TRUCK_3X4' ? 'Caminhão 3/4' : vehicle.type === 'FIORINO' ? 'Fiorino' : 'Outro'}</span>
               </div>
             </CardContent>
             <CardFooter>
               <Badge variant={vehicle.status === "ACTIVE" ? "default" : "secondary"}>
-                {vehicle.status}
+                {vehicle.status === "ACTIVE" ? "ATIVO" : vehicle.status}
               </Badge>
             </CardFooter>
           </Card>
         ))}
+        {vehicles?.length === 0 && !isLoading && (
+          <div className="col-span-full py-12 text-center border-2 border-dashed border-border rounded-xl">
+             <Truck className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
+             <h3 className="text-lg font-bold text-foreground">Nenhum veículo encontrado</h3>
+             <p className="text-muted-foreground mt-1">Cadastre o primeiro veículo da frota para começar.</p>
+          </div>
+        )}
       </div>
     </Layout>
   );

@@ -1,7 +1,8 @@
-import { pgTable, text, serial, integer, boolean, timestamp, numeric, decimal, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, numeric, uniqueIndex } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
+import { cpfSchema } from "./cpf";
 
 // === TENANTS ===
 export const tenants = pgTable("tenants", {
@@ -25,13 +26,17 @@ export const tenantRelations = relations(tenants, ({ many }) => ({
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
-  email: text("email").notNull(),
+  email: text("email"),
+  cpf: text("cpf"),
   password: text("password").notNull(),
   name: text("name").notNull(),
   role: text("role").notNull().default("OPERATOR"), // ADMIN, OPERATOR
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  usersEmailUnique: uniqueIndex("users_email_unique").on(table.email),
+  usersCpfUnique: uniqueIndex("users_cpf_unique").on(table.cpf),
+}));
 
 export const userRelations = relations(users, ({ one }) => ({
   tenant: one(tenants, {
@@ -97,13 +102,16 @@ export const employees = pgTable("employees", {
   id: serial("id").primaryKey(),
   tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
   name: text("name").notNull(),
+  cpf: text("cpf"),
   position: text("position"),
   salary: numeric("salary").notNull(),
   payday: integer("payday").notNull(), // 1-31
   status: text("status").notNull().default("ACTIVE"), // ACTIVE, INACTIVE
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  employeesCpfUnique: uniqueIndex("employees_cpf_unique").on(table.cpf),
+}));
 
 // === EMPLOYEE PAYMENTS ===
 export const employeePayments = pgTable("employee_payments", {
@@ -117,7 +125,13 @@ export const employeePayments = pgTable("employee_payments", {
   financeTransactionId: integer("finance_transaction_id").references(() => financeTransactions.id),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => ({
+  employeePaymentUniqueByMonth: uniqueIndex("employee_payments_tenant_employee_month_unique").on(
+    table.tenantId,
+    table.employeeId,
+    table.competenceMonth,
+  ),
+}));
 
 // === VEHICLES ===
 export const vehicles = pgTable("vehicles", {
@@ -192,19 +206,71 @@ export const employeePaymentRelations = relations(employeePayments, ({ one }) =>
 
 // === SCHEMAS ===
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertUserSchema = createInsertSchema(users).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertUserSchema = createInsertSchema(users)
+  .omit({ id: true, createdAt: true, updatedAt: true })
+  .extend({
+    email: z.string().trim().email("E-mail inválido").optional().nullable(),
+    cpf: cpfSchema.optional().nullable(),
+  })
+  .superRefine((value, ctx) => {
+    if (!value.email && !value.cpf) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Informe e-mail ou CPF",
+        path: ["email"],
+      });
+    }
+  });
 export const insertCategorySchema = createInsertSchema(categories).omit({ id: true });
 export const insertAttachmentSchema = createInsertSchema(attachments).omit({ id: true, createdAt: true });
-export const insertFinanceTransactionSchema = createInsertSchema(financeTransactions).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertEmployeePaymentSchema = createInsertSchema(employeePayments).omit({ id: true, createdAt: true, updatedAt: true });
-export const insertVehicleSchema = createInsertSchema(vehicles).omit({ id: true, createdAt: true, updatedAt: true });
+export const insertFinanceTransactionSchema = createInsertSchema(financeTransactions).omit({
+  id: true,
+  tenantId: true,
+  invoiceId: true,
+  employeePaymentId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertInvoiceSchema = createInsertSchema(invoices).omit({
+  id: true,
+  tenantId: true,
+  financeTransactionId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertEmployeeSchema = createInsertSchema(employees)
+  .omit({ id: true, tenantId: true, createdAt: true, updatedAt: true })
+  .extend({
+    cpf: cpfSchema,
+  });
+export const insertEmployeePaymentSchema = createInsertSchema(employeePayments).omit({
+  id: true,
+  tenantId: true,
+  financeTransactionId: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export const insertVehicleSchema = createInsertSchema(vehicles).omit({
+  id: true,
+  tenantId: true,
+  createdAt: true,
+  updatedAt: true,
+});
 export const insertLoadingSchema = createInsertSchema(loadings).omit({ id: true, createdAt: true, updatedAt: true });
+export const manageLoadingSchema = createInsertSchema(loadings).omit({
+  id: true,
+  tenantId: true,
+  appliedPercent: true,
+  estimatedRevenue: true,
+  createdAt: true,
+  updatedAt: true,
+});
 
 // Types
 export type Tenant = typeof tenants.$inferSelect;
 export type User = typeof users.$inferSelect;
+export type AuthUser = Omit<User, "password">;
+export type InsertUser = typeof users.$inferInsert;
 export type Category = typeof categories.$inferSelect;
 export type Attachment = typeof attachments.$inferSelect;
 export type FinanceTransaction = typeof financeTransactions.$inferSelect;

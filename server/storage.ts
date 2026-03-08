@@ -8,6 +8,7 @@ import { eq, and, desc, sql, gte, lte } from "drizzle-orm";
 export interface IStorage {
   // User & Tenant
   getUserByEmail(email: string): Promise<User | undefined>;
+  getUserByCpf(cpf: string): Promise<User | undefined>;
   getUser(id: number): Promise<User | undefined>;
   getTenant(id: number): Promise<Tenant | undefined>;
   createTenant(name: string): Promise<Tenant>; // Minimal for seed
@@ -15,6 +16,7 @@ export interface IStorage {
 
   // Categories
   getCategories(tenantId: number): Promise<Category[]>;
+  getCategory(id: number): Promise<Category | undefined>;
   createCategory(category: any): Promise<Category>; // Partial type usage for now
 
   // Finance
@@ -22,26 +24,37 @@ export interface IStorage {
   createTransaction(data: any): Promise<FinanceTransaction>;
   
   // Invoices
-  getInvoices(tenantId: number, competenceMonth?: string): Promise<(Invoice & { attachment: Attachment })[]>;
+  getInvoices(
+    tenantId: number,
+    filters?: { competenceMonth?: string; periodType?: string },
+  ): Promise<(Invoice & { attachment: Attachment })[]>;
   createInvoice(data: any): Promise<Invoice>;
 
   // Employees
   getEmployees(tenantId: number): Promise<Employee[]>;
+  getEmployeeById(id: number): Promise<Employee | undefined>;
+  getEmployeeByCpf(cpf: string): Promise<Employee | undefined>;
   createEmployee(data: any): Promise<Employee>;
+  createEmployeeWithOperator(data: { employee: any; user: InsertUser }): Promise<Employee>;
+  getEmployeePaymentByCompetence(tenantId: number, employeeId: number, competenceMonth: string): Promise<EmployeePayment | undefined>;
   getEmployeePayments(tenantId: number, competenceMonth: string): Promise<EmployeePayment[]>;
   createEmployeePayment(data: any): Promise<EmployeePayment>;
 
   // Vehicles
   getVehicles(tenantId: number): Promise<Vehicle[]>;
+  getVehicleById(id: number): Promise<Vehicle | undefined>;
   createVehicle(data: any): Promise<Vehicle>;
 
   // Loadings
   getLoadings(tenantId: number, options?: { month?: string; vehicleId?: number }): Promise<(Loading & { vehicle: Vehicle })[]>;
+  getLoadingById(id: number): Promise<Loading | undefined>;
   createLoading(data: any): Promise<Loading>;
+  updateLoading(id: number, data: any): Promise<Loading | undefined>;
 
   // Attachments
   createAttachment(data: any): Promise<Attachment>;
   getAttachment(id: number): Promise<Attachment | undefined>;
+  getAttachmentByStoragePath(storagePath: string): Promise<Attachment | undefined>;
 
   // Dashboard Stats
   getDashboardStats(tenantId: number, month?: string): Promise<any>;
@@ -52,6 +65,10 @@ export class DatabaseStorage implements IStorage {
   // ... User/Tenant
   async getUserByEmail(email: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.email, email));
+    return user;
+  }
+  async getUserByCpf(cpf: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.cpf, cpf));
     return user;
   }
   async getUser(id: number): Promise<User | undefined> {
@@ -74,6 +91,10 @@ export class DatabaseStorage implements IStorage {
   // Categories
   async getCategories(tenantId: number): Promise<Category[]> {
     return await db.select().from(categories).where(eq(categories.tenantId, tenantId));
+  }
+  async getCategory(id: number): Promise<Category | undefined> {
+    const [category] = await db.select().from(categories).where(eq(categories.id, id));
+    return category;
   }
   async createCategory(category: any): Promise<Category> {
     const [cat] = await db.insert(categories).values(category).returning();
@@ -109,10 +130,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Invoices
-  async getInvoices(tenantId: number, competenceMonth?: string): Promise<(Invoice & { attachment: Attachment })[]> {
+  async getInvoices(
+    tenantId: number,
+    filters?: { competenceMonth?: string; periodType?: string },
+  ): Promise<(Invoice & { attachment: Attachment })[]> {
     let conditions = [eq(invoices.tenantId, tenantId)];
-    if (competenceMonth) {
-      conditions.push(eq(invoices.competenceMonth, competenceMonth));
+    if (filters?.competenceMonth) {
+      conditions.push(eq(invoices.competenceMonth, filters.competenceMonth));
+    }
+    if (filters?.periodType) {
+      conditions.push(eq(invoices.periodType, filters.periodType));
     }
     const rows = await db.select()
       .from(invoices)
@@ -131,9 +158,32 @@ export class DatabaseStorage implements IStorage {
   async getEmployees(tenantId: number): Promise<Employee[]> {
     return await db.select().from(employees).where(eq(employees.tenantId, tenantId));
   }
+  async getEmployeeById(id: number): Promise<Employee | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.id, id));
+    return employee;
+  }
+  async getEmployeeByCpf(cpf: string): Promise<Employee | undefined> {
+    const [employee] = await db.select().from(employees).where(eq(employees.cpf, cpf));
+    return employee;
+  }
   async createEmployee(data: any): Promise<Employee> {
     const [emp] = await db.insert(employees).values(data).returning();
     return emp;
+  }
+  async createEmployeeWithOperator(data: { employee: any; user: InsertUser }): Promise<Employee> {
+    return db.transaction(async (tx) => {
+      await tx.insert(users).values(data.user);
+      const [employee] = await tx.insert(employees).values(data.employee).returning();
+      return employee;
+    });
+  }
+  async getEmployeePaymentByCompetence(tenantId: number, employeeId: number, competenceMonth: string): Promise<EmployeePayment | undefined> {
+    const [payment] = await db.select().from(employeePayments).where(and(
+      eq(employeePayments.tenantId, tenantId),
+      eq(employeePayments.employeeId, employeeId),
+      eq(employeePayments.competenceMonth, competenceMonth)
+    ));
+    return payment;
   }
   async getEmployeePayments(tenantId: number, competenceMonth: string): Promise<EmployeePayment[]> {
     return await db.select().from(employeePayments).where(and(
@@ -149,6 +199,10 @@ export class DatabaseStorage implements IStorage {
   // Vehicles
   async getVehicles(tenantId: number): Promise<Vehicle[]> {
     return await db.select().from(vehicles).where(eq(vehicles.tenantId, tenantId));
+  }
+  async getVehicleById(id: number): Promise<Vehicle | undefined> {
+    const [vehicle] = await db.select().from(vehicles).where(eq(vehicles.id, id));
+    return vehicle;
   }
   async createVehicle(data: any): Promise<Vehicle> {
     const [veh] = await db.insert(vehicles).values(data).returning();
@@ -174,8 +228,16 @@ export class DatabaseStorage implements IStorage {
       .orderBy(desc(loadings.date));
     return rows.map(r => ({ ...r.loadings, vehicle: r.vehicles! }));
   }
+  async getLoadingById(id: number): Promise<Loading | undefined> {
+    const [loading] = await db.select().from(loadings).where(eq(loadings.id, id));
+    return loading;
+  }
   async createLoading(data: any): Promise<Loading> {
     const [load] = await db.insert(loadings).values(data).returning();
+    return load;
+  }
+  async updateLoading(id: number, data: any): Promise<Loading | undefined> {
+    const [load] = await db.update(loadings).set(data).where(eq(loadings.id, id)).returning();
     return load;
   }
 
@@ -186,6 +248,10 @@ export class DatabaseStorage implements IStorage {
   }
   async getAttachment(id: number): Promise<Attachment | undefined> {
     const [att] = await db.select().from(attachments).where(eq(attachments.id, id));
+    return att;
+  }
+  async getAttachmentByStoragePath(storagePath: string): Promise<Attachment | undefined> {
+    const [att] = await db.select().from(attachments).where(eq(attachments.storagePath, storagePath));
     return att;
   }
 
@@ -207,17 +273,26 @@ export class DatabaseStorage implements IStorage {
       .from(financeTransactions)
       .where(and(eq(financeTransactions.tenantId, tenantId), eq(financeTransactions.type, 'EXPENSE'), dateFilter));
 
-    // Missing invoice check (simplistic)
-    // Check if any invoice exists for current month (or requested month)
-    const targetMonth = month || new Date().toISOString().slice(0, 7);
+    // Current half-month invoice status (A_01_15 / B_16_END)
+    const now = new Date();
+    const targetMonth = now.toISOString().slice(0, 7);
+    const targetPeriodType = now.getDate() <= 15 ? "A_01_15" : "B_16_END";
     const invoiceCount = await db.select({ count: sql<number>`count(*)` })
       .from(invoices)
-      .where(and(eq(invoices.tenantId, tenantId), eq(invoices.competenceMonth, targetMonth)));
+      .where(and(
+        eq(invoices.tenantId, tenantId),
+        eq(invoices.competenceMonth, targetMonth),
+        eq(invoices.periodType, targetPeriodType),
+      ));
 
-    // Current invoice total
+    // Current half-month invoice total
     const invoiceTotal = await db.select({ value: sql<number>`sum(${invoices.amount})` })
       .from(invoices)
-      .where(and(eq(invoices.tenantId, tenantId), eq(invoices.competenceMonth, targetMonth)));
+      .where(and(
+        eq(invoices.tenantId, tenantId),
+        eq(invoices.competenceMonth, targetMonth),
+        eq(invoices.periodType, targetPeriodType),
+      ));
 
     return {
       income: Number(income[0]?.value || 0),

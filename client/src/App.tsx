@@ -13,9 +13,18 @@ import Employees from "@/pages/Employees";
 import Vehicles from "@/pages/Vehicles";
 import Loadings from "@/pages/Loadings";
 import { Loader2 } from "lucide-react";
+import { USER_ROLES } from "@shared/schema";
 
 // Protected Route wrapper
-function ProtectedRoute({ component: Component }: { component: React.ComponentType }) {
+function ProtectedRoute({
+  component: Component,
+  allowedRoles,
+  fallbackPath = "/loadings",
+}: {
+  component: React.ComponentType;
+  allowedRoles?: Array<keyof typeof USER_ROLES>;
+  fallbackPath?: string;
+}) {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
@@ -30,6 +39,10 @@ function ProtectedRoute({ component: Component }: { component: React.ComponentTy
     return <Redirect to="/auth" />;
   }
 
+  if (allowedRoles && !allowedRoles.includes(user.role as keyof typeof USER_ROLES)) {
+    return <Redirect to={fallbackPath} />;
+  }
+
   return <Component />;
 }
 
@@ -38,22 +51,22 @@ function Router() {
     <Switch>
       <Route path="/auth" component={AuthPage} />
       <Route path="/">
-        <ProtectedRoute component={Dashboard} />
+        <ProtectedRoute component={Dashboard} allowedRoles={["ADMIN"]} />
       </Route>
       <Route path="/finance">
-        <ProtectedRoute component={Finance} />
+        <ProtectedRoute component={Finance} allowedRoles={["ADMIN"]} />
       </Route>
       <Route path="/invoices">
-        <ProtectedRoute component={Invoices} />
+        <ProtectedRoute component={Invoices} allowedRoles={["ADMIN"]} />
       </Route>
       <Route path="/employees">
-        <ProtectedRoute component={Employees} />
+        <ProtectedRoute component={Employees} allowedRoles={["ADMIN"]} />
       </Route>
       <Route path="/vehicles">
-        <ProtectedRoute component={Vehicles} />
+        <ProtectedRoute component={Vehicles} allowedRoles={["ADMIN"]} />
       </Route>
       <Route path="/loadings">
-        <ProtectedRoute component={Loadings} />
+        <ProtectedRoute component={Loadings} allowedRoles={["ADMIN", "OPERATOR"]} />
       </Route>
       <Route component={NotFound} />
     </Switch>

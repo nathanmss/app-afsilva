@@ -8,8 +8,10 @@ import {
   insertEmployeeSchema,
   insertEmployeePaymentSchema,
   insertVehicleSchema,
+  manageLoadingSchema,
   insertLoadingSchema,
-  users, categories, financeTransactions, invoices, employees, employeePayments, vehicles, loadings, attachments
+  users, categories, financeTransactions, invoices, employees, employeePayments, vehicles, loadings, attachments,
+  type AuthUser,
 } from './schema';
 
 // Shared error schemas
@@ -27,6 +29,9 @@ export const errorSchemas = {
   unauthorized: z.object({
     message: z.string(),
   }),
+  forbidden: z.object({
+    message: z.string(),
+  }),
 };
 
 // API Contract
@@ -36,11 +41,11 @@ export const api = {
       method: 'POST' as const,
       path: '/api/login',
       input: z.object({
-        username: z.string().email(), // We use email as username
-        password: z.string(),
+        identifier: z.string().trim().min(1, 'Informe CPF ou e-mail'),
+        password: z.string().min(1, 'Informe a senha'),
       }),
       responses: {
-        200: z.custom<typeof users.$inferSelect>(),
+        200: z.custom<AuthUser>(),
         401: errorSchemas.unauthorized,
       },
     },
@@ -55,8 +60,9 @@ export const api = {
       method: 'GET' as const,
       path: '/api/user',
       responses: {
-        200: z.custom<typeof users.$inferSelect>(),
+        200: z.custom<AuthUser>(),
         401: errorSchemas.unauthorized,
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -75,6 +81,7 @@ export const api = {
           missingInvoice: z.boolean(),
           currentInvoiceTotal: z.number(),
         }),
+        403: errorSchemas.forbidden,
       },
     },
     ranking: {
@@ -90,6 +97,7 @@ export const api = {
           plate: z.string(),
           estimatedRevenue: z.number(),
         })),
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -104,6 +112,7 @@ export const api = {
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof financeTransactions.$inferSelect & { category: typeof categories.$inferSelect }>()),
+        403: errorSchemas.forbidden,
       },
     },
     create: {
@@ -112,6 +121,7 @@ export const api = {
       input: insertFinanceTransactionSchema,
       responses: {
         201: z.custom<typeof financeTransactions.$inferSelect>(),
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -121,9 +131,11 @@ export const api = {
       path: '/api/invoices',
       input: z.object({
         competenceMonth: z.string().optional(),
+        periodType: z.enum(['A_01_15', 'B_16_END']).optional(),
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof invoices.$inferSelect & { attachment: typeof attachments.$inferSelect }>()),
+        403: errorSchemas.forbidden,
       },
     },
     create: {
@@ -132,6 +144,7 @@ export const api = {
       input: insertInvoiceSchema,
       responses: {
         201: z.custom<typeof invoices.$inferSelect>(),
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -141,6 +154,7 @@ export const api = {
       path: '/api/employees',
       responses: {
         200: z.array(z.custom<typeof employees.$inferSelect>()),
+        403: errorSchemas.forbidden,
       },
     },
     create: {
@@ -149,6 +163,7 @@ export const api = {
       input: insertEmployeeSchema,
       responses: {
         201: z.custom<typeof employees.$inferSelect>(),
+        403: errorSchemas.forbidden,
       },
     },
     getPayments: {
@@ -159,6 +174,7 @@ export const api = {
       }),
       responses: {
         200: z.array(z.custom<typeof employeePayments.$inferSelect>()),
+        403: errorSchemas.forbidden,
       },
     },
     pay: {
@@ -167,6 +183,7 @@ export const api = {
       input: insertEmployeePaymentSchema,
       responses: {
         201: z.custom<typeof employeePayments.$inferSelect>(),
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -176,6 +193,7 @@ export const api = {
       path: '/api/vehicles',
       responses: {
         200: z.array(z.custom<typeof vehicles.$inferSelect>()),
+        403: errorSchemas.forbidden,
       },
     },
     create: {
@@ -184,6 +202,7 @@ export const api = {
       input: insertVehicleSchema,
       responses: {
         201: z.custom<typeof vehicles.$inferSelect>(),
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -197,14 +216,25 @@ export const api = {
       }).optional(),
       responses: {
         200: z.array(z.custom<typeof loadings.$inferSelect & { vehicle: typeof vehicles.$inferSelect }>()),
+        403: errorSchemas.forbidden,
       },
     },
     create: {
       method: 'POST' as const,
       path: '/api/loadings',
-      input: insertLoadingSchema,
+      input: manageLoadingSchema,
       responses: {
         201: z.custom<typeof loadings.$inferSelect>(),
+        403: errorSchemas.forbidden,
+      },
+    },
+    update: {
+      method: 'PATCH' as const,
+      path: '/api/loadings/:id',
+      input: manageLoadingSchema,
+      responses: {
+        200: z.custom<typeof loadings.$inferSelect>(),
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -214,6 +244,7 @@ export const api = {
       path: '/api/categories',
       responses: {
         200: z.array(z.custom<typeof categories.$inferSelect>()),
+        403: errorSchemas.forbidden,
       },
     },
   },
@@ -224,6 +255,7 @@ export const api = {
       // input: FormData (not definable in Zod easily for request body parsing here, handled manually)
       responses: {
         201: z.custom<typeof attachments.$inferSelect>(),
+        403: errorSchemas.forbidden,
       },
     },
   },
