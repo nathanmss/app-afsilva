@@ -95,7 +95,15 @@ export async function registerRoutes(
 
   passport.use(new LocalStrategy({ usernameField: "identifier" }, async (identifier, password, done) => {
     try {
+      if (typeof identifier !== "string" || typeof password !== "string") {
+        return done(null, false);
+      }
+
       const sanitizedIdentifier = identifier.trim();
+      if (!sanitizedIdentifier) {
+        return done(null, false);
+      }
+
       const normalizedDigits = sanitizedIdentifier.replace(/\D/g, "");
       const user = sanitizedIdentifier.includes("@")
         ? await storage.getUserByEmail(sanitizedIdentifier.toLowerCase())
@@ -180,9 +188,19 @@ export async function registerRoutes(
   });
 
   // Auth
-  app.post(api.auth.login.path, passport.authenticate('local'), (req, res) => {
-    res.json(req.user);
-  });
+  app.post(
+    api.auth.login.path,
+    (req, _res, next) => {
+      if (!req.body?.identifier && typeof req.body?.username === "string") {
+        req.body.identifier = req.body.username;
+      }
+      next();
+    },
+    passport.authenticate('local'),
+    (req, res) => {
+      res.json(req.user);
+    },
+  );
 
   app.post(api.auth.logout.path, (req, res) => {
     req.logout(() => {
