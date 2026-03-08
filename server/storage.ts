@@ -9,6 +9,7 @@ export interface IStorage {
   // User & Tenant
   getUserByEmail(email: string): Promise<User | undefined>;
   getUserByCpf(cpf: string): Promise<User | undefined>;
+  getUserByCnpj(cnpj: string): Promise<User | undefined>;
   getUser(id: number): Promise<User | undefined>;
   getTenant(id: number): Promise<Tenant | undefined>;
   createTenant(name: string): Promise<Tenant>; // Minimal for seed
@@ -69,6 +70,10 @@ export class DatabaseStorage implements IStorage {
   }
   async getUserByCpf(cpf: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.cpf, cpf));
+    return user;
+  }
+  async getUserByCnpj(cnpj: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.cnpj, cnpj));
     return user;
   }
   async getUser(id: number): Promise<User | undefined> {

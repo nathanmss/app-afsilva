@@ -14,6 +14,7 @@ import fs from "fs";
 import { asyncHandler, HttpError } from "./http";
 import { USER_ROLES } from "@shared/schema";
 import { normalizeCpf } from "@shared/cpf";
+import { normalizeCnpj } from "@shared/cnpj";
 
 const pgSession = MongoStore(session);
 
@@ -30,6 +31,7 @@ function getCurrentUser(req: Request) {
     name: string;
     email: string | null;
     cpf: string | null;
+    cnpj: string | null;
   };
 }
 
@@ -94,9 +96,12 @@ export async function registerRoutes(
   passport.use(new LocalStrategy({ usernameField: "identifier" }, async (identifier, password, done) => {
     try {
       const sanitizedIdentifier = identifier.trim();
+      const normalizedDigits = sanitizedIdentifier.replace(/\D/g, "");
       const user = sanitizedIdentifier.includes("@")
         ? await storage.getUserByEmail(sanitizedIdentifier.toLowerCase())
-        : await storage.getUserByCpf(normalizeCpf(sanitizedIdentifier));
+        : normalizedDigits.length === 14
+          ? await storage.getUserByCnpj(normalizeCnpj(sanitizedIdentifier))
+          : await storage.getUserByCpf(normalizeCpf(sanitizedIdentifier));
       if (!user) return done(null, false);
       const isValid = await bcrypt.compare(password, user.password);
       if (!isValid) return done(null, false);

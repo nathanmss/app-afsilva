@@ -3,6 +3,7 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { relations } from "drizzle-orm";
 import { cpfSchema } from "./cpf";
+import { cnpjSchema } from "./cnpj";
 
 // === TENANTS ===
 export const tenants = pgTable("tenants", {
@@ -28,6 +29,7 @@ export const users = pgTable("users", {
   tenantId: integer("tenant_id").references(() => tenants.id).notNull(),
   email: text("email"),
   cpf: text("cpf"),
+  cnpj: text("cnpj"),
   password: text("password").notNull(),
   name: text("name").notNull(),
   role: text("role").notNull().default("OPERATOR"), // ADMIN, OPERATOR
@@ -36,6 +38,7 @@ export const users = pgTable("users", {
 }, (table) => ({
   usersEmailUnique: uniqueIndex("users_email_unique").on(table.email),
   usersCpfUnique: uniqueIndex("users_cpf_unique").on(table.cpf),
+  usersCnpjUnique: uniqueIndex("users_cnpj_unique").on(table.cnpj),
 }));
 
 export const userRelations = relations(users, ({ one }) => ({
@@ -211,12 +214,13 @@ export const insertUserSchema = createInsertSchema(users)
   .extend({
     email: z.string().trim().email("E-mail inválido").optional().nullable(),
     cpf: cpfSchema.optional().nullable(),
+    cnpj: cnpjSchema.optional().nullable(),
   })
   .superRefine((value, ctx) => {
-    if (!value.email && !value.cpf) {
+    if (!value.email && !value.cpf && !value.cnpj) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: "Informe e-mail ou CPF",
+        message: "Informe e-mail, CPF ou CNPJ",
         path: ["email"],
       });
     }

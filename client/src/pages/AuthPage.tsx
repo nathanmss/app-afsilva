@@ -54,7 +54,7 @@ export default function AuthPage() {
         <Card className="border-border/50 shadow-xl shadow-black/5">
           <CardHeader>
             <CardTitle>Acesso ao Sistema</CardTitle>
-            <CardDescription>Operadores entram com CPF. Admin pode usar e-mail.</CardDescription>
+            <CardDescription>Operadores entram com CPF. Admin entra com CNPJ.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
@@ -64,9 +64,9 @@ export default function AuthPage() {
                   name="identifier"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>CPF ou e-mail</FormLabel>
+                      <FormLabel>CPF ou CNPJ</FormLabel>
                       <FormControl>
-                        <Input placeholder="000.000.000-00" {...field} className="bg-muted/50" />
+                        <Input placeholder="000.000.000-00 ou 00.000.000/0000-00" {...field} className="bg-muted/50" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
