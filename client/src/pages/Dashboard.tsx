@@ -1,6 +1,7 @@
 import { useDashboardStats, useRanking } from "@/hooks/use-dashboard";
 import { Layout } from "@/components/Layout";
 import { StatCard } from "@/components/StatCard";
+import { useState } from "react";
 import { 
   DollarSign, 
   CreditCard, 
@@ -14,16 +15,17 @@ import { ptBR } from "date-fns/locale";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 
 export default function Dashboard() {
-  const currentMonth = format(new Date(), "yyyy-MM");
-  const { data: stats, isLoading: statsLoading } = useDashboardStats(currentMonth);
-  const { data: ranking, isLoading: rankingLoading } = useRanking(currentMonth);
+  const [selectedMonth, setSelectedMonth] = useState(format(new Date(), "yyyy-MM"));
+  const { data: stats, isLoading: statsLoading } = useDashboardStats(selectedMonth);
+  const { data: ranking, isLoading: rankingLoading } = useRanking(selectedMonth);
 
   const formatCurrency = (val: number) => 
     new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
 
-  const displayMonth = format(new Date(), "MMMM yyyy", { locale: ptBR });
+  const displayMonth = format(new Date(`${selectedMonth}-01T00:00:00`), "MMMM yyyy", { locale: ptBR });
   const capitalizedMonth = displayMonth.charAt(0).toUpperCase() + displayMonth.slice(1);
 
   if (statsLoading || rankingLoading) {
@@ -46,6 +48,12 @@ export default function Dashboard() {
           <h1 className="text-3xl font-display font-bold text-foreground">Painel Operacional</h1>
           <p className="text-muted-foreground">Resumo financeiro e operacional de {capitalizedMonth}</p>
         </div>
+        <Input
+          type="month"
+          value={selectedMonth}
+          onChange={(event) => setSelectedMonth(event.target.value)}
+          className="w-full sm:w-48 bg-background"
+        />
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">

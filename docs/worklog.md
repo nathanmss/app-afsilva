@@ -192,3 +192,20 @@
   - criar a application no projeto `app-afsilva`
   - configurar envs equivalentes no painel do Coolify
   - configurar healthcheck, volume `/app/uploads`, domínio e SSL
+
+## Handoff
+- agente: Codex
+- área: UX de faturamento / leitura histórica
+- arquivos alterados:
+  - `client/src/pages/Invoices.tsx`
+  - `client/src/pages/Dashboard.tsx`
+- resumo:
+  - corrigido o comportamento confuso pós-cadastro de NF: a tela agora troca automaticamente para a competência e quinzena da nota recém-salva
+  - adicionado seletor de mês no dashboard para leitura de janeiro/fevereiro/março e demais competências históricas
+  - validado com `npm run check` e `npm run build`
+- impacto:
+  - a NF recém-cadastrada deixa de parecer "sumida" quando a competência cadastrada é diferente do mês atual
+  - o dashboard deixa de ficar preso ao mês corrente, o que é essencial para retroalimentar o histórico da empresa
+- pendências:
+  - redeploy da aplicação no Coolify para publicar este ajuste
+  - testar cadastro de NF retroativa e conferir a troca automática de filtro

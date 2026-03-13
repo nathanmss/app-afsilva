@@ -43,7 +43,11 @@ function getDefaultPeriodType() {
   return new Date().getDate() <= 15 ? INVOICE_PERIODS.A_01_15 : INVOICE_PERIODS.B_16_END;
 }
 
-function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
+function CreateInvoiceForm({
+  onSuccess,
+}: {
+  onSuccess: (invoice: z.infer<typeof insertInvoiceSchema>) => void;
+}) {
   const { toast } = useToast();
   const { mutateAsync: extractInvoiceDraft, isPending: isExtracting } = useExtractInvoiceDraft();
   const { mutateAsync: createInvoice, isPending: isCreating } = useCreateInvoice();
@@ -74,7 +78,7 @@ function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
       return;
     }
 
-    await createInvoice({
+    const createdInvoice = await createInvoice({
       ...values,
       attachmentId,
       number: values.number?.trim() || null,
@@ -91,7 +95,7 @@ function CreateInvoiceForm({ onSuccess }: { onSuccess: () => void }) {
       amount: "0",
       status: INVOICE_STATUS.ISSUED,
     });
-    onSuccess();
+    onSuccess(createdInvoice);
   }
 
   async function handleExtract() {
@@ -326,7 +330,13 @@ export default function Invoices() {
                 O sistema registra a NF e cria automaticamente a receita vinculada no financeiro.
               </DialogDescription>
             </DialogHeader>
-            <CreateInvoiceForm onSuccess={() => setOpen(false)} />
+            <CreateInvoiceForm
+              onSuccess={(invoice) => {
+                setCompetenceMonth(invoice.competenceMonth);
+                setPeriodType(invoice.periodType as "A_01_15" | "B_16_END");
+                setOpen(false);
+              }}
+            />
           </DialogContent>
         </Dialog>
       </div>
