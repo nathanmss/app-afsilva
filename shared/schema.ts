@@ -234,6 +234,8 @@ export const insertFinanceTransactionSchema = createInsertSchema(financeTransact
   employeePaymentId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  date: z.coerce.date(),
 });
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   id: true,
@@ -241,6 +243,8 @@ export const insertInvoiceSchema = createInsertSchema(invoices).omit({
   financeTransactionId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  issueDate: z.coerce.date(),
 });
 export const insertEmployeeSchema = createInsertSchema(employees)
   .omit({ id: true, tenantId: true, createdAt: true, updatedAt: true })
@@ -253,6 +257,8 @@ export const insertEmployeePaymentSchema = createInsertSchema(employeePayments).
   financeTransactionId: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  paymentDate: z.coerce.date(),
 });
 export const insertVehicleSchema = createInsertSchema(vehicles).omit({
   id: true,
@@ -268,6 +274,8 @@ export const manageLoadingSchema = createInsertSchema(loadings).omit({
   estimatedRevenue: true,
   createdAt: true,
   updatedAt: true,
+}).extend({
+  date: z.coerce.date(),
 });
 
 // Types
