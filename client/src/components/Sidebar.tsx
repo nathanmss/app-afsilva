@@ -39,7 +39,7 @@ export function Sidebar() {
     <div className="flex flex-col h-full py-4">
       <div className="px-6 mb-8 flex items-center gap-3">
         <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-white p-1">
-          <img src="/favicon.png" alt="AF Silva Logo" className="w-full h-full object-contain" />
+          <img src="/favicon.jpg" alt="AF Silva Logo" className="w-full h-full object-contain" />
         </div>
         <span className="font-display font-bold text-xl tracking-tight">AF Silva Transportes</span>
       </div>
@@ -97,7 +97,7 @@ export function Sidebar() {
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-background/80 backdrop-blur-md border-b border-border p-4 flex items-center justify-between">
          <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-white p-0.5">
-              <img src="/favicon.png" alt="AF Silva Logo" className="w-full h-full object-contain" />
+              <img src="/favicon.jpg" alt="AF Silva Logo" className="w-full h-full object-contain" />
             </div>
             <span className="font-display font-bold text-lg">AF Silva Transportes</span>
          </div>

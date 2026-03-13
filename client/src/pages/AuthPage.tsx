@@ -45,7 +45,7 @@ export default function AuthPage() {
       <div className="w-full max-w-md space-y-8 animate-in zoom-in-95 duration-500">
         <div className="text-center space-y-2">
           <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-black/5 bg-white p-2">
-             <img src="/favicon.png" alt="AF Silva Logo" className="w-full h-full object-contain" />
+             <img src="/favicon.jpg" alt="AF Silva Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-3xl font-display font-bold text-foreground mt-6">AF Silva Transportes</h1>
           <p className="text-muted-foreground">Acesso ao painel operacional e financeiro</p>

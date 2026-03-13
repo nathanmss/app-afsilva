@@ -1,8 +1,8 @@
-const CACHE_NAME = 'afsilva-v1';
+const CACHE_NAME = 'afsilva-v2';
 const ASSETS = [
   '/',
   '/index.html',
-  '/favicon.png',
+  '/favicon.jpg',
   '/manifest.json'
 ];
 
