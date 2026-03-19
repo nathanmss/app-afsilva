@@ -1,7 +1,9 @@
-const CACHE_NAME = 'afsilva-v3';
+const CACHE_NAME = 'afsilva-v4';
+const OFFLINE_URL = '/offline.html';
 const STATIC_ASSETS = [
   '/favicon.jpg',
-  '/manifest.json'
+  '/manifest.json',
+  OFFLINE_URL,
 ];
 
 self.addEventListener('install', (event) => {
@@ -23,21 +25,61 @@ self.addEventListener('activate', (event) => {
   );
 });
 
+function isCacheableStaticRequest(request) {
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) {
+    return false;
+  }
+
+  if (url.pathname.startsWith('/api')) {
+    return false;
+  }
+
+  return ['style', 'script', 'image', 'font'].includes(request.destination)
+    || url.pathname === '/manifest.json'
+    || url.pathname === '/favicon.jpg';
+}
+
 self.addEventListener('fetch', (event) => {
   const { request } = event;
-
-  if (request.mode === 'navigate') {
-    event.respondWith(
-      fetch(request).catch(() => caches.match('/'))
-    );
-    return;
-  }
 
   if (request.method !== 'GET') {
     return;
   }
 
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          const responseClone = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          return response;
+        })
+        .catch(async () => {
+          const cachedPage = await caches.match(request);
+          return cachedPage || caches.match(OFFLINE_URL);
+        })
+    );
+    return;
+  }
+
+  if (!isCacheableStaticRequest(request)) {
+    return;
+  }
+
   event.respondWith(
-    caches.match(request).then((cachedResponse) => cachedResponse || fetch(request))
+    caches.match(request).then((cachedResponse) => {
+      const networkResponse = fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(request, responseClone));
+          }
+          return response;
+        })
+        .catch(() => cachedResponse);
+
+      return cachedResponse || networkResponse;
+    })
   );
 });

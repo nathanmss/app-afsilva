@@ -163,3 +163,27 @@
 - pendências:
   - executar `npm run check`
   - rodar `npx -y @playwright/test@1.58.2 test --project=api-smoke` no ambiente com acesso à URL e ao banco
+
+## Handoff
+- agente: Codex
+- área: pwa / mobile / frontend funcional
+- arquivos alterados:
+  - `client/index.html`
+  - `client/public/manifest.json`
+  - `client/public/sw.js`
+  - `client/public/offline.html`
+  - `client/public/apple-touch-icon.jpg`
+  - `docs/worklog.md`
+- resumo:
+  - revisado o bloco PWA com foco em instalação e navegação no celular
+  - removido o bloqueio de zoom do viewport e adicionadas meta tags de app/tema para Android e iOS
+  - ajustado o manifesto com `short_name`, idioma, orientação e cores coerentes com a experiência móvel
+  - fortalecido o service worker com fallback offline real para navegação e cache seguro apenas de assets estáticos da mesma origem
+  - adicionada página offline dedicada e ícone específico para home screen da Apple
+- impacto:
+  - melhora a instalabilidade do app no celular e a aparência da barra do navegador/home screen
+  - reduz falhas de navegação quando a conexão oscila no uso móvel
+  - evita comportamento ruim de acessibilidade causado por `maximum-scale=1`
+- pendências:
+  - executar `npm run check` e `npm run build`
+  - após publicar, validar instalação em Android/iPhone e o fallback offline em modo avião

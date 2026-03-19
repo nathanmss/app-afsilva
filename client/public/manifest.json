@@ -1,9 +1,13 @@
 {
+  "id": "/",
   "name": "AF Silva Transportes",
-  "short_name": "AF Silva Transportes",
-  "theme_color": "#ffffff",
-  "background_color": "#ffffff",
+  "short_name": "AF Silva",
+  "description": "Painel operacional e financeiro da AF Silva Transportes.",
+  "lang": "pt-BR",
+  "theme_color": "#0f172a",
+  "background_color": "#f8fafc",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "scope": "/",
   "start_url": "/",
   "icons": [
