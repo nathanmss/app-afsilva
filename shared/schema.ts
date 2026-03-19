@@ -216,6 +216,14 @@ export const updateTenantProfileSchema = z.object({
   urbanPercent: z.string().trim().min(1, "Informe o percentual urbano"),
   tripPercent: z.string().trim().min(1, "Informe o percentual de viagem"),
 });
+export const updateUserProfileSchema = z.object({
+  name: z.string().trim().min(1, "Informe o nome do usuário").max(120, "Nome muito longo"),
+  email: z.union([z.string().trim().email("E-mail inválido"), z.literal("")]).optional().transform((value) => {
+    if (value === undefined) return undefined;
+    const normalized = typeof value === "string" ? value.trim().toLowerCase() : value;
+    return normalized ? normalized : null;
+  }),
+});
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({

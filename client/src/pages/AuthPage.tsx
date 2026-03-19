@@ -16,7 +16,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Truck } from "lucide-react";
+import { BrandMark } from "@/components/BrandMark";
 
 export default function AuthPage() {
   const { loginMutation, user } = useAuth();
@@ -44,9 +44,7 @@ export default function AuthPage() {
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8 animate-in zoom-in-95 duration-500">
         <div className="text-center space-y-2">
-          <div className="w-24 h-24 rounded-2xl flex items-center justify-center mx-auto shadow-xl shadow-black/5 bg-white p-2">
-             <img src="/favicon.jpg" alt="AF Silva Logo" className="w-full h-full object-contain" />
-          </div>
+          <BrandMark className="w-24 h-24 rounded-2xl mx-auto shadow-xl shadow-black/5 bg-white p-2" />
           <h1 className="text-3xl font-display font-bold text-foreground mt-6">AF Silva Transportes</h1>
           <p className="text-muted-foreground">Acesso ao painel operacional e financeiro</p>
         </div>
@@ -85,9 +83,9 @@ export default function AuthPage() {
                     </FormItem>
                   )}
                 />
-                <Button 
-                  type="submit" 
-                  className="w-full h-11 text-base shadow-lg shadow-primary/20 hover:shadow-primary/30 font-semibold tracking-wide" 
+                <Button
+                  type="submit"
+                  className="w-full h-11 text-base shadow-lg shadow-primary/20 hover:shadow-primary/30 font-semibold tracking-wide"
                   disabled={loginMutation.isPending}
                 >
                   {loginMutation.isPending ? "Entrando..." : "Entrar no Sistema"}

@@ -13,6 +13,7 @@ import Employees from "@/pages/Employees";
 import Vehicles from "@/pages/Vehicles";
 import Loadings from "@/pages/Loadings";
 import CompanyProfile from "@/pages/CompanyProfile";
+import UserProfile from "@/pages/UserProfile";
 import { Loader2 } from "lucide-react";
 import { USER_ROLES } from "@shared/schema";
 
@@ -71,6 +72,9 @@ function Router() {
       </Route>
       <Route path="/company-profile">
         <ProtectedRoute component={CompanyProfile} allowedRoles={["ADMIN"]} />
+      </Route>
+      <Route path="/profile">
+        <ProtectedRoute component={UserProfile} allowedRoles={["ADMIN", "OPERATOR"]} />
       </Route>
       <Route component={NotFound} />
     </Switch>

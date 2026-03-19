@@ -62,3 +62,33 @@
   - a revisão final fica rastreável antes do redeploy
 - pendências:
   - executar smoke test pós-deploy incluindo edição do Perfil da Empresa e criação de romaneio com os percentuais atualizados
+
+## Handoff
+- agente: Codex
+- área: backend / frontend funcional / auth
+- arquivos alterados:
+  - `shared/schema.ts`
+  - `shared/routes.ts`
+  - `server/storage.ts`
+  - `server/routes.ts`
+  - `client/src/components/BrandMark.tsx`
+  - `client/src/components/Sidebar.tsx`
+  - `client/src/pages/AuthPage.tsx`
+  - `client/src/hooks/use-user-profile.ts`
+  - `client/src/pages/UserProfile.tsx`
+  - `client/src/App.tsx`
+  - `client/src/hooks/use-employees.ts`
+  - `client/src/pages/Employees.tsx`
+  - `docs/worklog.md`
+- resumo:
+  - implementado o módulo Meu Perfil com contrato compartilhado e endpoints `GET/PUT /api/profile` para o usuário autenticado atualizar nome e e-mail
+  - ajustada a navegação para expor `/profile` a `ADMIN` e `OPERATOR`, e o card da sidebar agora usa o nome real do usuário com rótulo curto de perfil (`ADM` / `OPERADOR`)
+  - adicionada a exclusão de funcionário com remoção do operador vinculado quando não houver histórico de pagamentos; se existir histórico, a API bloqueia a exclusão com conflito
+  - criado fallback visual de marca em login/sidebar para impedir exibição do ícone quebrado quando o asset do logo falhar ou vier de cache ruim
+- impacto:
+  - o representante legal/admin pode substituir o nome genérico por nome real e refletir isso imediatamente na interface autenticada
+  - operadores passam a ter acesso ao próprio perfil sem abrir módulos administrativos
+  - a exclusão de funcionário deixa de exigir banco manual e preserva integridade financeira
+- pendências:
+  - validar no navegador publicado a atualização do nome no card da sidebar após salvar o perfil
+  - validar visualmente se o fallback de marca eliminou o ícone quebrado em sessão com cache antigo

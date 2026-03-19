@@ -1,10 +1,10 @@
 import { useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
-import { useEmployees, useCreateEmployee, useEmployeePayments, usePayEmployee } from "@/hooks/use-employees";
+import { useEmployees, useCreateEmployee, useDeleteEmployee, useEmployeePayments, usePayEmployee } from "@/hooks/use-employees";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Plus, ShieldCheck, KeyRound, CalendarDays, Wallet, Briefcase, IdCard, Banknote, UserCheck } from "lucide-react";
+import { Users, Plus, ShieldCheck, KeyRound, CalendarDays, Wallet, Briefcase, IdCard, Banknote, UserCheck, Trash2 } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EMPLOYEE_STATUS, insertEmployeePaymentSchema, insertEmployeeSchema } from "@shared/schema";
@@ -38,7 +38,6 @@ import { formatCpf } from "@shared/cpf";
 import { format } from "date-fns";
 import { z } from "zod";
 import { cn } from "@/lib/utils";
-import { ptBR } from "date-fns/locale";
 
 function CreateEmployeeForm({ onSuccess }: { onSuccess: () => void }) {
   const { mutate, isPending } = useCreateEmployee();
@@ -160,8 +159,8 @@ function CreateEmployeeForm({ onSuccess }: { onSuccess: () => void }) {
 
         <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4 text-xs text-blue-800 space-y-2">
           <div className="flex items-center gap-2 font-bold uppercase tracking-wide">
-             <KeyRound className="w-3.5 h-3.5" />
-             Credenciais de Acesso
+            <KeyRound className="w-3.5 h-3.5" />
+            Credenciais de Acesso
           </div>
           <p className="font-medium opacity-80">O acesso do operador será criado automaticamente: o login é o CPF e a senha inicial são os 4 últimos dígitos do CPF.</p>
         </div>
@@ -215,7 +214,7 @@ function PayEmployeeForm({
               });
               onSuccess();
             },
-          }),
+          })
         )}
         className="space-y-5"
       >
@@ -277,6 +276,7 @@ export default function Employees() {
   const [selectedEmployeeId, setSelectedEmployeeId] = useState<number | null>(null);
   const [competenceMonth, setCompetenceMonth] = useState(format(new Date(), "yyyy-MM"));
   const { data: employees, isLoading } = useEmployees();
+  const deleteEmployeeMutation = useDeleteEmployee();
   const { data: payments, isLoading: isLoadingPayments } = useEmployeePayments(competenceMonth);
 
   const selectedEmployee = employees?.find((employee) => employee.id === selectedEmployeeId) ?? null;
@@ -290,8 +290,20 @@ export default function Employees() {
     [payments],
   );
 
-  const formatCurrency = (val: number) => 
-    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val);
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(val);
+
+  const handleDeleteEmployee = (employeeId: number, employeeName: string) => {
+    const confirmed = window.confirm(
+      `Excluir ${employeeName}? Essa ação remove o cadastro e o acesso do operador, desde que ele ainda não tenha histórico de pagamentos.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    deleteEmployeeMutation.mutate(employeeId);
+  };
 
   return (
     <Layout>
@@ -300,22 +312,22 @@ export default function Employees() {
           <div>
             <h1 className="text-3xl font-display font-bold text-foreground tracking-tight mb-1">Recursos Humanos</h1>
             <p className="text-muted-foreground font-medium flex items-center gap-2">
-               <Users className="w-4 h-4" />
-               Controle de equipe e folha de pagamento AF Silva
+              <Users className="w-4 h-4" />
+              Controle de equipe e folha de pagamento AF Silva
             </p>
           </div>
 
           <div className="w-full xl:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <div className="relative group">
-               <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-               <Input
+              <CalendarDays className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
                 type="month"
                 value={competenceMonth}
                 onChange={(event) => setCompetenceMonth(event.target.value)}
                 className="pl-10 sm:w-44 bg-background border-border shadow-sm focus:ring-primary/20 font-medium"
               />
             </div>
-            
+
             <Dialog open={open} onOpenChange={setOpen}>
               <DialogTrigger asChild>
                 <Button className="font-bold shadow-md shadow-primary/10 transition-all hover:shadow-primary/20 px-6">
@@ -361,16 +373,16 @@ export default function Employees() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <Card className="border-border/80 shadow-sm overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-             <UserCheck className="w-12 h-12 text-primary" />
+            <UserCheck className="w-12 h-12 text-primary" />
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="text-xs font-bold uppercase tracking-[0.1em]">Equipe Ativa</CardDescription>
-            <CardTitle className="text-3xl font-display font-bold">{employees?.filter(e => e.status === EMPLOYEE_STATUS.ACTIVE).length ?? 0}</CardTitle>
+            <CardTitle className="text-3xl font-display font-bold">{employees?.filter((employee) => employee.status === EMPLOYEE_STATUS.ACTIVE).length ?? 0}</CardTitle>
           </CardHeader>
         </Card>
         <Card className="border-border/80 shadow-sm overflow-hidden group">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-             <Wallet className="w-12 h-12 text-primary" />
+            <Wallet className="w-12 h-12 text-primary" />
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="text-xs font-bold uppercase tracking-[0.1em]">Pagos ({competenceMonth})</CardDescription>
@@ -379,7 +391,7 @@ export default function Employees() {
         </Card>
         <Card className="border-border/80 shadow-sm overflow-hidden group border-t-4 border-t-primary">
           <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-110 transition-transform">
-             <Banknote className="w-12 h-12 text-primary" />
+            <Banknote className="w-12 h-12 text-primary" />
           </div>
           <CardHeader className="pb-2">
             <CardDescription className="text-xs font-bold uppercase tracking-[0.1em]">Total Folha Mês</CardDescription>
@@ -391,19 +403,21 @@ export default function Employees() {
       <div className="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-8 mb-8">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {isLoading ? (
-            [1, 2, 3, 4].map(i => (
-              <div key={i} className="h-64 bg-card border border-border/50 rounded-xl animate-pulse" />
+            [1, 2, 3, 4].map((index) => (
+              <div key={index} className="h-64 bg-card border border-border/50 rounded-xl animate-pulse" />
             ))
           ) : employees?.map((employee) => {
             const alreadyPaid = paidEmployees.has(employee.id);
 
             return (
               <Card key={employee.id} className="group hover:shadow-xl transition-all duration-300 border-border/80 overflow-hidden relative">
-                <div className={cn(
-                  "absolute top-0 left-0 w-1 h-full transition-all group-hover:w-2",
-                  employee.status === EMPLOYEE_STATUS.ACTIVE ? "bg-primary" : "bg-slate-300"
-                )} />
-                
+                <div
+                  className={cn(
+                    "absolute top-0 left-0 w-1 h-full transition-all group-hover:w-2",
+                    employee.status === EMPLOYEE_STATUS.ACTIVE ? "bg-primary" : "bg-slate-300",
+                  )}
+                />
+
                 <CardHeader className="flex flex-row items-center justify-between gap-4 pb-4 border-b border-border/50 bg-muted/5">
                   <div className="flex items-center gap-4">
                     <Avatar className="w-14 h-14 border-2 border-background shadow-md">
@@ -414,8 +428,8 @@ export default function Employees() {
                     <div className="space-y-0.5 min-w-0">
                       <CardTitle className="text-lg font-display font-bold text-foreground truncate">{employee.name}</CardTitle>
                       <div className="flex items-center gap-2 text-muted-foreground">
-                         <Briefcase className="w-3.5 h-3.5" />
-                         <span className="text-xs font-bold uppercase tracking-wider">{employee.position || "Operador"}</span>
+                        <Briefcase className="w-3.5 h-3.5" />
+                        <span className="text-xs font-bold uppercase tracking-wider">{employee.position || "Operador"}</span>
                       </div>
                     </div>
                   </div>
@@ -423,12 +437,12 @@ export default function Employees() {
                     {employee.status === EMPLOYEE_STATUS.ACTIVE ? "ATIVO" : "INATIVO"}
                   </Badge>
                 </CardHeader>
-                
+
                 <CardContent className="pt-6 space-y-4 text-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                       <IdCard className="w-4 h-4" />
-                       <span className="text-xs font-semibold uppercase tracking-wider">Documento</span>
+                      <IdCard className="w-4 h-4" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">Documento</span>
                     </div>
                     <span className="font-mono text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded">
                       {employee.cpf ? formatCpf(employee.cpf) : "N/D"}
@@ -436,34 +450,46 @@ export default function Employees() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                       <Banknote className="w-4 h-4" />
-                       <span className="text-xs font-semibold uppercase tracking-wider">Salário</span>
+                      <Banknote className="w-4 h-4" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">Salário</span>
                     </div>
                     <span className="font-bold text-foreground">{formatCurrency(Number(employee.salary))}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                       <CalendarDays className="w-4 h-4" />
-                       <span className="text-xs font-semibold uppercase tracking-wider">Vencimento</span>
+                      <CalendarDays className="w-4 h-4" />
+                      <span className="text-xs font-semibold uppercase tracking-wider">Vencimento</span>
                     </div>
                     <span className="font-bold text-foreground">Dia {employee.payday}</span>
                   </div>
 
-                  <Button
-                    className={cn(
-                      "w-full font-bold mt-2 shadow-sm transition-all h-10",
-                      alreadyPaid ? "bg-muted text-muted-foreground" : "shadow-primary/10 hover:shadow-primary/20"
-                    )}
-                    variant={alreadyPaid ? "secondary" : "default"}
-                    disabled={alreadyPaid || employee.status !== EMPLOYEE_STATUS.ACTIVE}
-                    onClick={() => {
-                      setSelectedEmployeeId(employee.id);
-                      setPaymentOpen(true);
-                    }}
-                  >
-                    <Wallet className="w-4 h-4 mr-2" />
-                    {alreadyPaid ? "Pagamento Realizado" : `Quitar ${competenceMonth}`}
-                  </Button>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                    <Button
+                      className={cn(
+                        "w-full font-bold shadow-sm transition-all h-10",
+                        alreadyPaid ? "bg-muted text-muted-foreground" : "shadow-primary/10 hover:shadow-primary/20",
+                      )}
+                      variant={alreadyPaid ? "secondary" : "default"}
+                      disabled={alreadyPaid || employee.status !== EMPLOYEE_STATUS.ACTIVE}
+                      onClick={() => {
+                        setSelectedEmployeeId(employee.id);
+                        setPaymentOpen(true);
+                      }}
+                    >
+                      <Wallet className="w-4 h-4 mr-2" />
+                      {alreadyPaid ? "Pagamento Realizado" : `Quitar ${competenceMonth}`}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="w-full h-10 font-bold border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      disabled={deleteEmployeeMutation.isPending}
+                      onClick={() => handleDeleteEmployee(employee.id, employee.name)}
+                    >
+                      <Trash2 className="w-4 h-4 mr-2" />
+                      Excluir
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
@@ -479,20 +505,20 @@ export default function Employees() {
                 Nenhum funcionário operacional cadastrado na base de RH AF Silva.
               </p>
               <Button variant="outline" className="mt-8 border-dashed" onClick={() => setOpen(true)}>
-                 <Plus className="w-4 h-4 mr-2" />
-                 Adicionar Funcionário
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Funcionário
               </Button>
             </div>
           )}
         </div>
 
         <div className="space-y-6">
-           <Card className="border-border/80 shadow-sm bg-sidebar text-sidebar-foreground overflow-hidden">
+          <Card className="border-border/80 shadow-sm bg-sidebar text-sidebar-foreground overflow-hidden">
             <div className="p-1 bg-primary" />
             <CardHeader className="pb-3">
               <CardTitle className="text-lg font-display font-bold flex items-center gap-2">
-                 <ShieldCheck className="w-5 h-5 text-primary-foreground" />
-                 Acesso Operacional
+                <ShieldCheck className="w-5 h-5 text-primary-foreground" />
+                Acesso Operacional
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-xs">
@@ -502,30 +528,30 @@ export default function Employees() {
               </div>
               <div className="p-3 bg-white/5 rounded-lg border border-white/10 flex gap-3">
                 <IdCard className="w-4 h-4 shrink-0 text-primary" />
-                <p className="font-medium opacity-90">O operador tem acesso restrito apenas ao módulo de cargas e romaneios.</p>
+                <p className="font-medium opacity-90">O operador tem acesso restrito ao próprio perfil e ao módulo de cargas e romaneios.</p>
               </div>
               <div className="p-3 bg-white/5 rounded-lg border border-white/10 flex gap-3">
                 <UserCheck className="w-4 h-4 shrink-0 text-primary" />
-                <p className="font-medium opacity-90">Dados financeiros e de gestão são ocultados para perfis de operador.</p>
+                <p className="font-medium opacity-90">Dados financeiros e de gestão continuam ocultados para perfis de operador.</p>
               </div>
             </CardContent>
           </Card>
 
           <Card className="border-border/80 shadow-sm overflow-hidden">
-             <CardHeader className="pb-3 border-b border-border/50 bg-muted/20">
-                <CardTitle className="text-sm font-bold uppercase tracking-wider">Ajuda de Folha</CardTitle>
-             </CardHeader>
-             <CardContent className="pt-4 text-xs text-muted-foreground leading-relaxed">
-                Ao registrar um pagamento aqui, o sistema gera automaticamente uma saída no **Livro Caixa** (Financeiro) para a categoria de Folha de Pagamento.
-             </CardContent>
+            <CardHeader className="pb-3 border-b border-border/50 bg-muted/20">
+              <CardTitle className="text-sm font-bold uppercase tracking-wider">Ajuda de Folha</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-4 text-xs text-muted-foreground leading-relaxed">
+              Ao registrar um pagamento aqui, o sistema gera automaticamente uma saída no Livro Caixa (Financeiro) para a categoria de Folha de Pagamento.
+            </CardContent>
           </Card>
         </div>
       </div>
 
       <Card className="border-border/80 shadow-sm overflow-hidden">
         <div className="bg-muted/30 border-b border-border/80 px-6 py-4 flex items-center justify-between">
-           <h3 className="font-bold text-sm uppercase tracking-[0.1em]">Histórico de Pagamentos ({competenceMonth})</h3>
-           <Badge className="font-bold bg-primary shadow-sm">{payments?.length ?? 0} registros</Badge>
+          <h3 className="font-bold text-sm uppercase tracking-[0.1em]">Histórico de Pagamentos ({competenceMonth})</h3>
+          <Badge className="font-bold bg-primary shadow-sm">{payments?.length ?? 0} registros</Badge>
         </div>
         <div className="overflow-x-auto">
           <Table>
@@ -543,9 +569,9 @@ export default function Employees() {
                 <TableRow>
                   <TableCell colSpan={5} className="py-20 text-center">
                     <div className="flex flex-col items-center gap-2">
-                        <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
-                        <span className="text-sm font-medium text-muted-foreground">Processando dados...</span>
-                     </div>
+                      <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                      <span className="text-sm font-medium text-muted-foreground">Processando dados...</span>
+                    </div>
                   </TableCell>
                 </TableRow>
               ) : payments?.length === 0 ? (
@@ -555,7 +581,7 @@ export default function Employees() {
                   </TableCell>
                 </TableRow>
               ) : (
-                payments?.map((payment) => {
+                (payments ?? []).map((payment) => {
                   const employee = employees?.find((item) => item.id === payment.employeeId);
                   return (
                     <TableRow key={payment.id} className="hover:bg-muted/30 transition-colors border-b border-border/50 last:border-0">
@@ -578,8 +604,8 @@ export default function Employees() {
           </Table>
         </div>
         <div className="bg-muted/10 p-4 border-t border-border/80 flex justify-between items-center text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
-           <span>Sistema Administrativo AF Silva</span>
-           <span>Página 1 de 1</span>
+          <span>Sistema Administrativo AF Silva</span>
+          <span>Página 1 de 1</span>
         </div>
       </Card>
     </Layout>

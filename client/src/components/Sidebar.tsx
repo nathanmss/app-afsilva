@@ -1,15 +1,16 @@
 import { Link, useLocation } from "wouter";
-import { 
-  LayoutDashboard, 
-  Wallet, 
-  FileText, 
-  Users, 
-  Truck, 
-  Package, 
+import {
+  LayoutDashboard,
+  Wallet,
+  FileText,
+  Users,
+  Truck,
+  Package,
   Building2,
+  UserRound,
   LogOut,
   Menu,
-  ChevronRight
+  ChevronRight,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
@@ -17,33 +18,30 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { USER_ROLES } from "@shared/schema";
+import { BrandMark } from "@/components/BrandMark";
 
-const links = [
-  { href: "/", label: "Painel", icon: LayoutDashboard },
-  { href: "/finance", label: "Financeiro", icon: Wallet },
-  { href: "/invoices", label: "Notas Fiscais", icon: FileText },
-  { href: "/company-profile", label: "Empresa", icon: Building2 },
-  { href: "/loadings", label: "Cargas", icon: Package },
-  { href: "/vehicles", label: "Veículos", icon: Truck },
-  { href: "/employees", label: "Funcionários", icon: Users },
+const links: Array<{ href: string; label: string; icon: typeof LayoutDashboard; roles: Array<keyof typeof USER_ROLES> }> = [
+  { href: "/", label: "Painel", icon: LayoutDashboard, roles: [USER_ROLES.ADMIN] },
+  { href: "/finance", label: "Financeiro", icon: Wallet, roles: [USER_ROLES.ADMIN] },
+  { href: "/invoices", label: "Notas Fiscais", icon: FileText, roles: [USER_ROLES.ADMIN] },
+  { href: "/company-profile", label: "Empresa", icon: Building2, roles: [USER_ROLES.ADMIN] },
+  { href: "/profile", label: "Meu Perfil", icon: UserRound, roles: [USER_ROLES.ADMIN, USER_ROLES.OPERATOR] },
+  { href: "/loadings", label: "Cargas", icon: Package, roles: [USER_ROLES.ADMIN, USER_ROLES.OPERATOR] },
+  { href: "/vehicles", label: "Veículos", icon: Truck, roles: [USER_ROLES.ADMIN] },
+  { href: "/employees", label: "Funcionários", icon: Users, roles: [USER_ROLES.ADMIN] },
 ];
 
 export function Sidebar() {
   const [location] = useLocation();
   const { logoutMutation, user } = useAuth();
   const [open, setOpen] = useState(false);
-  
-  const visibleLinks =
-    user?.role === USER_ROLES.OPERATOR
-      ? links.filter((link) => link.href === "/loadings")
-      : links;
+
+  const visibleLinks = links.filter((link) => (user?.role ? link.roles.includes(user.role as keyof typeof USER_ROLES) : false));
 
   const NavContent = () => (
     <div className="flex flex-col h-full bg-sidebar text-sidebar-foreground">
       <div className="px-6 py-6 flex items-center gap-3 border-b border-sidebar-border">
-        <div className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm flex-shrink-0 flex items-center justify-center">
-          <img src="/favicon.jpg" alt="AF Silva Logo" className="w-full h-full object-contain" />
-        </div>
+        <BrandMark className="w-10 h-10 rounded-xl bg-white p-1 shadow-sm flex-shrink-0" />
         <div className="flex flex-col">
           <span className="font-display font-bold text-lg tracking-tight leading-tight">AF Silva</span>
           <span className="text-xs text-sidebar-foreground/70 font-medium tracking-widest uppercase">Transportes</span>
@@ -59,13 +57,13 @@ export function Sidebar() {
           const isActive = location === link.href;
           return (
             <Link key={link.href} href={link.href}>
-              <div 
+              <div
                 onClick={() => setOpen(false)}
                 className={cn(
                   "group flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer border",
-                  isActive 
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary/50 shadow-md shadow-sidebar-primary/20" 
-                    : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  isActive
+                    ? "bg-sidebar-primary text-sidebar-primary-foreground border-sidebar-primary/50 shadow-md shadow-sidebar-primary/20"
+                    : "border-transparent text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
                 )}
               >
                 <div className="flex items-center gap-3">
@@ -80,19 +78,21 @@ export function Sidebar() {
       </nav>
 
       <div className="p-4 border-t border-sidebar-border mt-auto bg-sidebar-accent/30">
-        <div className="bg-sidebar-accent border border-sidebar-border rounded-xl p-3 mb-3 flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-sidebar-primary/20 text-sidebar-primary flex items-center justify-center font-bold">
-            {user?.name?.charAt(0).toUpperCase() || "U"}
+        <Link href="/profile">
+          <div className="bg-sidebar-accent border border-sidebar-border rounded-xl p-3 mb-3 flex items-center gap-3 cursor-pointer transition-colors hover:border-sidebar-primary/40 hover:bg-sidebar-accent/80">
+            <div className="w-9 h-9 rounded-full bg-sidebar-primary/20 text-sidebar-primary flex items-center justify-center font-bold">
+              {user?.name?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-sm truncate text-sidebar-accent-foreground">{user?.name}</p>
+              <p className="text-[10px] text-sidebar-foreground/60 font-medium uppercase tracking-wider truncate">
+                {user?.role === USER_ROLES.ADMIN ? "ADM" : "OPERADOR"}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate text-sidebar-accent-foreground">{user?.name}</p>
-            <p className="text-[10px] text-sidebar-foreground/60 font-medium uppercase tracking-wider truncate">
-              {user?.role === USER_ROLES.ADMIN ? "Administrador" : "Operador"}
-            </p>
-          </div>
-        </div>
-        <Button 
-          variant="outline" 
+        </Link>
+        <Button
+          variant="outline"
           className="w-full justify-center bg-transparent border-sidebar-border text-sidebar-foreground hover:bg-destructive hover:text-destructive-foreground hover:border-destructive transition-colors"
           onClick={() => logoutMutation.mutate()}
         >
@@ -105,32 +105,27 @@ export function Sidebar() {
 
   return (
     <>
-      {/* Desktop Sidebar */}
       <aside className="hidden lg:flex flex-col w-72 fixed inset-y-0 z-30 shadow-2xl shadow-black/10">
         <NavContent />
       </aside>
 
-      {/* Mobile Trigger Header */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-40 bg-sidebar border-b border-sidebar-border p-4 flex items-center justify-between shadow-sm">
-         <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-white p-0.5 flex items-center justify-center">
-              <img src="/favicon.jpg" alt="AF Silva Logo" className="w-full h-full object-contain" />
-            </div>
-            <span className="font-display font-bold text-lg text-sidebar-foreground">AF Silva</span>
-         </div>
-         <Sheet open={open} onOpenChange={setOpen}>
-            <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" className="text-sidebar-foreground hover:bg-sidebar-accent">
-                <Menu className="w-6 h-6" />
-              </Button>
-            </SheetTrigger>
-            <SheetContent side="left" className="p-0 w-[280px] border-sidebar-border">
-              <NavContent />
-            </SheetContent>
-         </Sheet>
+        <div className="flex items-center gap-3">
+          <BrandMark className="w-8 h-8 rounded-lg bg-white p-0.5" />
+          <span className="font-display font-bold text-lg text-sidebar-foreground">AF Silva</span>
+        </div>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetTrigger asChild>
+            <Button variant="ghost" size="icon" className="text-sidebar-foreground hover:bg-sidebar-accent">
+              <Menu className="w-6 h-6" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="p-0 w-[280px] border-sidebar-border">
+            <NavContent />
+          </SheetContent>
+        </Sheet>
       </div>
 
-      {/* Spacer for mobile header */}
       <div className="h-16 lg:hidden" />
     </>
   );

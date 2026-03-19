@@ -49,6 +49,40 @@ export function useCreateEmployee() {
   });
 }
 
+export function useDeleteEmployee() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (employeeId: number) => {
+      const res = await fetch(api.employees.remove.path.replace(":id", String(employeeId)), {
+        method: api.employees.remove.method,
+        credentials: "include",
+      });
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete employee");
+      }
+      return api.employees.remove.responses[200].parse(await res.json());
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [api.employees.list.path] });
+      queryClient.invalidateQueries({ queryKey: [api.employees.getPayments.path] });
+      toast({
+        title: "Funcionário excluído",
+        description: "O cadastro e o acesso do operador foram removidos.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir funcionário",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 export function useEmployeePayments(competenceMonth: string) {
   return useQuery({
     queryKey: [api.employees.getPayments.path, competenceMonth],

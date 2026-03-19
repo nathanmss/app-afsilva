@@ -3,6 +3,7 @@ import {
   insertUserSchema, 
   insertTenantSchema,
   updateTenantProfileSchema,
+  updateUserProfileSchema,
   insertCategorySchema,
   insertFinanceTransactionSchema,
   insertInvoiceSchema,
@@ -123,6 +124,25 @@ export const api = {
       },
     },
   },
+  userProfile: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/profile',
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/profile',
+      input: updateUserProfileSchema,
+      responses: {
+        200: z.custom<typeof users.$inferSelect>(),
+        401: errorSchemas.unauthorized,
+      },
+    },
+  },
   finance: {
     list: {
       method: 'GET' as const,
@@ -205,6 +225,15 @@ export const api = {
       responses: {
         201: z.custom<typeof employees.$inferSelect>(),
         403: errorSchemas.forbidden,
+      },
+    },
+    remove: {
+      method: 'DELETE' as const,
+      path: '/api/employees/:id',
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        403: errorSchemas.forbidden,
+        404: errorSchemas.notFound,
       },
     },
     getPayments: {

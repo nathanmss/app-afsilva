@@ -214,6 +214,41 @@ export async function registerRoutes(
     res.json(req.user);
   });
 
+  // User Profile
+  app.get(api.userProfile.get.path, requireAuth, asyncHandler(async (req, res) => {
+    const user = await storage.getUser(getCurrentUser(req).id);
+    if (!user) {
+      throw new HttpError(404, "User profile not found");
+    }
+    res.json(sanitizeUser(user));
+  }));
+
+  app.put(api.userProfile.update.path, requireAuth, asyncHandler(async (req, res) => {
+    const currentUser = getCurrentUser(req);
+    const data = api.userProfile.update.input.parse(req.body);
+
+    try {
+      const updatedUser = await storage.updateUser(currentUser.id, {
+        name: data.name.trim(),
+        email: data.email === undefined ? currentUser.email : data.email,
+        updatedAt: new Date(),
+      });
+
+      if (!updatedUser) {
+        throw new HttpError(404, "User profile not found");
+      }
+
+      const safeUser = sanitizeUser(updatedUser);
+      req.user = safeUser;
+      res.json(safeUser);
+    } catch (error: any) {
+      if (error?.code === '23505') {
+        throw new HttpError(409, "E-mail já cadastrado para outro usuário");
+      }
+      throw error;
+    }
+  }));
+
   // Uploads
   app.post(api.uploads.upload.path, requireRoles("ADMIN"), upload.single('file'), asyncHandler(async (req, res) => {
     if (!req.file) {
@@ -379,6 +414,22 @@ export async function registerRoutes(
       throw error;
     }
     res.status(201).json(emp);
+  }));
+  app.delete(api.employees.remove.path.replace(":id", ":id"), requireRoles("ADMIN"), asyncHandler(async (req, res) => {
+    const employeeId = Number(req.params.id);
+    if (!Number.isInteger(employeeId) || employeeId <= 0) {
+      throw new HttpError(400, "Invalid employee id");
+    }
+
+    const result = await storage.deleteEmployee(getCurrentUser(req).tenantId, employeeId);
+    if (result === "not_found") {
+      throw new HttpError(404, "Funcionário não encontrado");
+    }
+    if (result === "has_payments") {
+      throw new HttpError(409, "Não é possível excluir funcionário com histórico de pagamentos");
+    }
+
+    res.json({ success: true });
   }));
   app.get(api.employees.getPayments.path, requireRoles("ADMIN"), asyncHandler(async (req, res) => {
     const pymts = await storage.getEmployeePayments(getCurrentUser(req).tenantId, req.query.competenceMonth as string);

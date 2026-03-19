@@ -11,6 +11,7 @@ export interface IStorage {
   getUserByCpf(cpf: string): Promise<User | undefined>;
   getUserByCnpj(cnpj: string): Promise<User | undefined>;
   getUser(id: number): Promise<User | undefined>;
+  updateUser(id: number, data: Partial<User>): Promise<User | undefined>;
   getTenant(id: number): Promise<Tenant | undefined>;
   updateTenant(id: number, data: Partial<Tenant>): Promise<Tenant | undefined>;
   createTenant(name: string): Promise<Tenant>; // Minimal for seed
@@ -39,6 +40,7 @@ export interface IStorage {
   getEmployeeByCpf(cpf: string): Promise<Employee | undefined>;
   createEmployee(data: any): Promise<Employee>;
   createEmployeeWithOperator(data: { employee: any; user: InsertUser }): Promise<Employee>;
+  deleteEmployee(tenantId: number, employeeId: number): Promise<"deleted" | "has_payments" | "not_found">;
   getEmployeePaymentByCompetence(tenantId: number, employeeId: number, competenceMonth: string): Promise<EmployeePayment | undefined>;
   getEmployeePayments(tenantId: number, competenceMonth: string): Promise<EmployeePayment[]>;
   createEmployeePayment(data: any): Promise<EmployeePayment>;
@@ -80,6 +82,10 @@ export class DatabaseStorage implements IStorage {
   }
   async getUser(id: number): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  async updateUser(id: number, data: Partial<User>): Promise<User | undefined> {
+    const [user] = await db.update(users).set(data).where(eq(users.id, id)).returning();
     return user;
   }
   async getTenant(id: number): Promise<Tenant | undefined> {
@@ -227,6 +233,42 @@ export class DatabaseStorage implements IStorage {
       await tx.insert(users).values(data.user);
       const [employee] = await tx.insert(employees).values(data.employee).returning();
       return employee;
+    });
+  }
+  async deleteEmployee(tenantId: number, employeeId: number): Promise<"deleted" | "has_payments" | "not_found"> {
+    return db.transaction(async (tx) => {
+      const [employee] = await tx.select().from(employees).where(and(
+        eq(employees.id, employeeId),
+        eq(employees.tenantId, tenantId),
+      ));
+
+      if (!employee) {
+        return "not_found";
+      }
+
+      const [payment] = await tx.select({ id: employeePayments.id }).from(employeePayments).where(and(
+        eq(employeePayments.tenantId, tenantId),
+        eq(employeePayments.employeeId, employeeId),
+      )).limit(1);
+
+      if (payment) {
+        return "has_payments";
+      }
+
+      await tx.delete(employees).where(and(
+        eq(employees.id, employeeId),
+        eq(employees.tenantId, tenantId),
+      ));
+
+      if (employee.cpf) {
+        await tx.delete(users).where(and(
+          eq(users.tenantId, tenantId),
+          eq(users.cpf, employee.cpf),
+          eq(users.role, "OPERATOR"),
+        ));
+      }
+
+      return "deleted";
     });
   }
   async getEmployeePaymentByCompetence(tenantId: number, employeeId: number, competenceMonth: string): Promise<EmployeePayment | undefined> {
