@@ -144,3 +144,22 @@
 - pendências:
   - executar `npm run check` e `npm run build`
   - após publicar, rodar novamente a suíte Playwright contra a URL publicada
+
+## Handoff
+- agente: Codex
+- área: qa / backend / banco
+- arquivos alterados:
+  - `e2e/helpers/env.ts`
+  - `e2e/helpers/data.ts`
+  - `e2e/api.smoke.spec.ts`
+  - `docs/worklog.md`
+- resumo:
+  - adicionada cobertura automatizada para criar uma NF temporária, validar sua persistência no PostgreSQL e confirmar a remoção física de NF, lançamento financeiro e anexo após o delete via API
+  - ampliado o helper de ambiente para ler `DATABASE_URL` local quando `E2E_DATABASE_URL` não for informado explicitamente no shell
+  - criados helpers reutilizáveis para upload, criação e limpeza de NF temporária na suíte de smoke
+- impacto:
+  - a suíte passa a provar que a exclusão de NF não é apenas visual e realmente remove os registros do banco
+  - futuras regressões de delete parcial entre `invoices`, `finance_transactions` e `attachments` passam a ser detectadas automaticamente
+- pendências:
+  - executar `npm run check`
+  - rodar `npx -y @playwright/test@1.58.2 test --project=api-smoke` no ambiente com acesso à URL e ao banco

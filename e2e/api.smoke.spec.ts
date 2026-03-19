@@ -1,11 +1,16 @@
 import { expect, request, test, type APIRequestContext } from "@playwright/test";
+import { Client } from "pg";
 import { api } from "../shared/routes";
 import { e2eEnv } from "./helpers/env";
 import { loginByApi, logoutByApi } from "./helpers/auth";
 import {
   buildTemporaryEmployeePayload,
+  buildTemporaryInvoicePayload,
   createTemporaryEmployee,
+  createTemporaryInvoice,
   deleteEmployeeIfPossible,
+  deleteInvoiceIfPossible,
+  uploadTemporaryInvoiceAttachment,
 } from "./helpers/data";
 
 test.describe.serial("API smoke", () => {
@@ -14,6 +19,7 @@ test.describe.serial("API smoke", () => {
   let currentProfile: any;
   let currentCompanyProfile: any;
   let tempEmployeeId: number | null = null;
+  let tempInvoiceId: number | null = null;
 
   test.beforeAll(async () => {
     adminRequest = await request.newContext({
@@ -33,6 +39,7 @@ test.describe.serial("API smoke", () => {
   });
 
   test.afterAll(async () => {
+    await deleteInvoiceIfPossible(adminRequest, tempInvoiceId);
     await deleteEmployeeIfPossible(adminRequest, tempEmployeeId);
     await logoutByApi(adminRequest);
     await adminRequest.dispose();
@@ -118,6 +125,95 @@ test.describe.serial("API smoke", () => {
     });
     expect(companyResponse.status()).toBe(200);
     api.companyProfile.update.responses[200].parse(await companyResponse.json());
+  });
+
+  test("invoice create/delete persists in database", async () => {
+    const attachment = await uploadTemporaryInvoiceAttachment(adminRequest);
+    const tempInvoice = buildTemporaryInvoicePayload(attachment.id);
+    const createdInvoice = await createTemporaryInvoice(adminRequest, tempInvoice.payload);
+    tempInvoiceId = createdInvoice.id;
+
+    const dbClient = new Client({ connectionString: e2eEnv.databaseURL() });
+    await dbClient.connect();
+
+    try {
+      const createdInvoiceRow = await dbClient.query(
+        `
+          select id, number, attachment_id, finance_transaction_id
+          from invoices
+          where id = $1
+        `,
+        [createdInvoice.id],
+      );
+
+      expect(createdInvoiceRow.rowCount).toBe(1);
+      expect(createdInvoiceRow.rows[0].number).toBe(tempInvoice.number);
+      expect(Number(createdInvoiceRow.rows[0].attachment_id)).toBe(attachment.id);
+
+      const financeTransactionId = Number(createdInvoiceRow.rows[0].finance_transaction_id);
+      expect(Number.isInteger(financeTransactionId)).toBeTruthy();
+
+      const financeRow = await dbClient.query(
+        `
+          select id, invoice_id, attachment_id
+          from finance_transactions
+          where id = $1
+        `,
+        [financeTransactionId],
+      );
+
+      expect(financeRow.rowCount).toBe(1);
+      expect(Number(financeRow.rows[0].invoice_id)).toBe(createdInvoice.id);
+      expect(Number(financeRow.rows[0].attachment_id)).toBe(attachment.id);
+
+      const attachmentRow = await dbClient.query(
+        `
+          select id
+          from attachments
+          where id = $1
+        `,
+        [attachment.id],
+      );
+
+      expect(attachmentRow.rowCount).toBe(1);
+
+      const deleteResponse = await adminRequest.delete(api.invoices.remove.path.replace(":id", String(createdInvoice.id)));
+      expect(deleteResponse.status()).toBe(200);
+      api.invoices.remove.responses[200].parse(await deleteResponse.json());
+      tempInvoiceId = null;
+
+      const deletedInvoiceRow = await dbClient.query(
+        `
+          select 1
+          from invoices
+          where id = $1
+        `,
+        [createdInvoice.id],
+      );
+      expect(deletedInvoiceRow.rowCount).toBe(0);
+
+      const deletedFinanceRow = await dbClient.query(
+        `
+          select 1
+          from finance_transactions
+          where id = $1
+        `,
+        [financeTransactionId],
+      );
+      expect(deletedFinanceRow.rowCount).toBe(0);
+
+      const deletedAttachmentRow = await dbClient.query(
+        `
+          select 1
+          from attachments
+          where id = $1
+        `,
+        [attachment.id],
+      );
+      expect(deletedAttachmentRow.rowCount).toBe(0);
+    } finally {
+      await dbClient.end();
+    }
   });
 
   test("employee create, operator permission checks and safe delete work", async () => {
