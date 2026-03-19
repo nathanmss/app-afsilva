@@ -8,3 +8,5 @@ vite.config.ts.*
 .local/
 uploads/*
 !uploads/.gitkeep
+playwright-report/
+test-results/

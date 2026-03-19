@@ -92,3 +92,30 @@
 - pendências:
   - validar no navegador publicado a atualização do nome no card da sidebar após salvar o perfil
   - validar visualmente se o fallback de marca eliminou o ícone quebrado em sessão com cache antigo
+
+## Handoff
+- agente: Codex
+- área: qa / deploy / e2e
+- arquivos alterados:
+  - `.gitignore`
+  - `package.json`
+  - `package-lock.json`
+  - `playwright.config.ts`
+  - `e2e/helpers/env.ts`
+  - `e2e/helpers/auth.ts`
+  - `e2e/helpers/data.ts`
+  - `e2e/api.smoke.spec.ts`
+  - `e2e/ui.smoke.spec.ts`
+  - `docs/playwright-smoke.md`
+  - `docs/worklog.md`
+- resumo:
+  - criada suíte Playwright parametrizada por URL e credenciais, separando `api-smoke` e `ui-smoke`
+  - configurado fluxo para rodar API antes da UI no mesmo comando, reduzindo falsos negativos e economizando tempo de validação
+  - adicionados helpers para login, massa temporária de funcionário e limpeza segura sem sujar a base publicada
+  - documentado o processo correto de execução antes e depois do redeploy
+- impacto:
+  - o projeto passa a ter um roteiro executável e repetível para validar auth, permissões, perfil, empresa, funcionários e navegação principal
+  - testes irreversíveis ficam explicitamente limitados a local/staging, evitando dano operacional em produção
+- pendências:
+  - redeployar a versão com o hotfix `ceb573f` antes da execução final da suíte publicada
+  - após o redeploy, rodar `api-smoke` e depois `ui-smoke` contra a URL pública
