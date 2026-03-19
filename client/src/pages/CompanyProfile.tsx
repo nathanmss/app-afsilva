@@ -20,15 +20,21 @@ import { Building2, Percent, MapPin, Save, ShieldCheck, Info } from "lucide-reac
 import { useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 
+function normalizePercentString(value: number, digits = 4) {
+  return value
+    .toFixed(digits)
+    .replace(/\.?0+$/, "");
+}
+
 function formatStoredPercent(value: string | number | null | undefined) {
   const numeric = Number(value ?? 0);
-  return Number.isFinite(numeric) ? String(numeric * 100) : "0";
+  return Number.isFinite(numeric) ? normalizePercentString(numeric * 100) : "0";
 }
 
 function parsePercentInput(value: string) {
   const normalized = String(value).replace(",", ".");
   const numeric = Number(normalized);
-  return Number.isFinite(numeric) ? String(numeric / 100) : value;
+  return Number.isFinite(numeric) ? normalizePercentString(numeric / 100, 6) : value;
 }
 
 export default function CompanyProfile() {
