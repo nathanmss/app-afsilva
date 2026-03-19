@@ -1,211 +1,42 @@
 ## Handoff
 - agente: Gemini
-- área: ui
+- área: ui / redesign
 - arquivos alterados:
   - `docs/redesign-plan.md`
-  - `client/src/components/Sidebar.tsx`
-  - `client/index.html`
-  - `client/public/manifest.json`
   - `client/src/index.css`
-- resumo:
-  - Concluída Etapa 2 (Mapeamento Visual): criado o plano de redesign (`redesign-plan.md`).
-  - Concluída Etapa 3 (Rebranding Visual): alterado o nome da aplicação de `FleetMgr` / `NextLog` para `AF Silva Transportes`.
-  - Adicionado `<title>` no `index.html` refletindo o novo nome.
-  - Atualizado `manifest.json` com o novo nome.
-  - Atualizada a cor `--primary` no `index.css` para um tom mais profundo e corporativo (`221 43% 30%`), adequado à nova marca de transportes.
-- impacto:
-  - Mudanças visuais na cor primária (botões, destaques, sidebar ativa).
-  - Título da página e identificação do PWA atualizados.
-- pendências:
-  - Codex: revisar `manifest.json`, metadados (se houverem outras ocorrências de NextLog no lado do backend ou variáveis de ambiente) e confirmar se há dependências hardcoded com o nome antigo.
-  - O logo e favicon (`favicon.png`) permanecem os mesmos temporariamente por ser um ativo estático, seria ideal providenciar a imagem oficial da marca "AF Silva Transportes".
-
-## Handoff
-- agente: Codex
-- área: backend
-- arquivos alterados:
-  - `server/http.ts`
-  - `server/index.ts`
-  - `server/routes.ts`
-  - `docs/execution-checklist.md`
-  - `docs/worklog.md`
-- resumo:
-  - adicionado wrapper para rotas assíncronas e erro HTTP explícito
-  - padronizado tratamento de erro para validação, upload e falhas internas
-  - adicionados headers de segurança básicos para produção
-  - definido que o backend manterá contratos de leitura/criação nesta fase para evitar churn prematuro de API
-- impacto:
-  - payload inválido agora retorna `400` estruturado
-  - falhas internas em produção deixam de expor detalhe interno
-  - expansão para `PUT/PATCH/DELETE` fica adiada até a fase funcional do frontend
-- pendências:
-  - decidir política de `ADMIN` versus `OPERATOR`
-  - aplicar `npm run db:push` no ambiente com `DATABASE_URL`
-
-## Handoff
-- agente: Codex
-- área: auth
-- arquivos alterados:
-  - `shared/schema.ts`
-  - `shared/routes.ts`
-  - `server/storage.ts`
-  - `server/routes.ts`
-  - `client/src/App.tsx`
   - `client/src/components/Sidebar.tsx`
-  - `client/src/hooks/use-auth.tsx`
-  - `client/src/hooks/use-loadings.ts`
-  - `client/src/pages/Loadings.tsx`
-  - `docs/execution-checklist.md`
-  - `docs/worklog.md`
-- resumo:
-  - aplicada política de perfil: `ADMIN` controla módulos administrativos e financeiros
-  - `OPERATOR` ficou restrito ao fluxo de romaneio (`loadings`) e leitura de veículos necessários ao cadastro
-  - adicionada rota de correção de romaneio com `PATCH /api/loadings/:id`
-  - ocultados na UI do operador os módulos proibidos e os valores derivados do romaneio
-- impacto:
-  - operador passa a ser redirecionado para `/loadings`
-  - respostas de `loadings` para operador mascaram `appliedPercent` e `estimatedRevenue`
-  - frontend já suporta correção de romaneio sem depender de redesign amplo
-- pendências:
-  - aplicar `npm run db:push` no ambiente com `DATABASE_URL`
-  - concluir flows de invoices e pagamentos mensais
-
-## Handoff
-- agente: Gemini
-- área: frontend / ui
-- arquivos alterados:
-  - `client/src/components/Sidebar.tsx`
-  - `client/src/pages/AuthPage.tsx`
+  - `client/src/components/Layout.tsx`
+  - `client/src/components/StatCard.tsx`
   - `client/src/pages/Dashboard.tsx`
+  - `client/src/pages/Finance.tsx`
   - `client/src/pages/Vehicles.tsx`
   - `client/src/pages/Employees.tsx`
-  - `client/src/pages/Finance.tsx`
-  - `client/src/pages/Invoices.tsx`
   - `client/src/pages/Loadings.tsx`
+  - `client/src/pages/Invoices.tsx`
 - resumo:
-  - Concluída Etapa 5 (Redesign Controlado).
-  - Aplicação integral de rebranding da marca para `AF Silva Transportes` na UI e textos (PT-BR).
-  - Adequação visual da tela de Autenticação (`AuthPage`).
-  - Painéis e Dashboards traduzidos e otimizados: Capitalização de meses, mudança de formato de moeda para `R$` (BRL) e data para `dd/MM/yyyy`.
-  - Melhorias de microcopy: Ajustados estados vazios (empty states) para listagens em tabelas de forma robusta e corporativa.
-  - Formulários de Inserção mantiveram os `name` e contratos em inglês respeitando o backend (Codex), apenas `Labels` visuais e `Placeholders` foram adaptados para PT-BR.
+  - **Overhaul Visual Completo:** A interface foi transformada de um estado "flat/simples" para um visual **robusto, profissional e operacional**.
+  - **Nova Paleta de Cores:** Introdução do tema "Logística Robusta" com Sidebar Dark (Marinho/Slate) e cor primária Azul Royal vibrante para ações de destaque.
+  - **Componentização Avançada:** Refatoração de `StatCard` com profundidade (sombras e gradientes sutis) e `Sidebar` com melhor hierarquia e estados ativos nítidos.
+  - **Redesign de Módulos:** Todas as páginas principais (Financeiro, Veículos, Funcionários, Cargas e Invoices) receberam novos cabeçalhos de contexto, tabelas com indicadores visuais de status (badges coloridos, ícones de direção de fluxo) e formulários com melhor espaçamento e tipografia.
+  - **UX Operacional:** Melhoria nos feedbacks visuais (loading states personalizados, empty states com ilustrações de ícones e mensagens claras).
 - impacto:
-  - Melhoria radical na experiência do usuário falante de português.
-  - Consistência de interface atingida sem causar quebras nos endpoints API que aguardam inputs em inglês.
+  - A aplicação agora transmite a seriedade e solidez de uma transportadora real (AF Silva Transportes).
+  - Melhora na legibilidade de dados críticos (valores financeiros, placas de veículos, status de romaneio).
 - pendências:
-  - Nenhuma no momento. O frontend visual e estrutural está pronto para integração final e testes conjuntos.
+  - Validar a responsividade fina em dispositivos mobile muito pequenos após as mudanças de largura da Sidebar no desktop.
+  - Providenciar o logo oficial em alta resolução para substituir o favicon temporário no cabeçalho da Sidebar.
 
 ## Handoff
 - agente: Codex
-- área: auth / employees
+- área: shared / deploy / docs
 - arquivos alterados:
-  - `shared/cpf.ts`
-  - `shared/schema.ts`
-  - `shared/routes.ts`
-  - `server/storage.ts`
-  - `server/routes.ts`
-  - `client/src/pages/AuthPage.tsx`
-  - `client/src/pages/Employees.tsx`
-  - `client/src/hooks/use-employees.ts`
-  - `README.md`
+  - `docs/gemini-alignment.md`
   - `specs.md`
-  - `docs/execution-checklist.md`
   - `docs/worklog.md`
 - resumo:
-  - autenticação ajustada para aceitar `CPF ou e-mail`, preservando admin por e-mail e habilitando operador por CPF
-  - adicionado tratamento e validação de CPF com normalização compartilhada entre backend e frontend
-  - cadastro de funcionário agora cria automaticamente o usuário operador com senha inicial igual aos 4 últimos dígitos do CPF
-  - tela de funcionários passou a cadastrar CPF e documentar as credenciais iniciais do operador
+  - criado guia operacional específico para o Gemini com regras de handoff, limites de atuação e sequência correta de deploy neste ambiente
+  - adicionada referência curta em `specs.md` para que o guia faça parte da leitura base do projeto
 - impacto:
-  - o módulo `employees` passa a ser a origem operacional do acesso do operador
-  - `users.email` deixa de ser obrigatório para suportar operadores sem e-mail
-  - será obrigatório rodar `npm run db:push` antes do deploy para aplicar colunas/constraints novas
+  - frontend e backend passam a usar a mesma regra de publicação, reduzindo redeploy prematuro e conflito em arquivos compartilhados
 - pendências:
-  - aplicar `npm run db:push` em ambiente com `DATABASE_URL`
-  - decidir se o admin também terá login por CPF no futuro ou seguirá somente por e-mail
-  - concluir telas pendentes de `invoices` e pagamentos mensais
-
-## Handoff
-- agente: Codex
-- área: frontend funcional / contratos
-- arquivos alterados:
-  - `shared/schema.ts`
-  - `shared/routes.ts`
-  - `server/storage.ts`
-  - `server/routes.ts`
-  - `client/src/hooks/use-invoices.ts`
-  - `client/src/pages/Invoices.tsx`
-  - `client/src/pages/Employees.tsx`
-  - `docs/execution-checklist.md`
-  - `docs/worklog.md`
-- resumo:
-  - corrigidos os schemas de criação compartilhados para não exigirem `tenantId` nem FKs internas no input do frontend
-  - `invoices` ganhou cadastro completo com upload obrigatório de anexo, filtros por `competenceMonth` e `periodType`, e abertura do arquivo anexado
-  - `employees` ganhou fluxo de pagamento mensal por competência, com bloqueio visual de duplicidade e histórico de pagamentos
-  - listagem de invoices no backend passou a aceitar filtro por quinzena
-- impacto:
-  - os formulários de criação de financeiro, funcionários, veículos, invoices e employee payments ficam alinhados com os contratos reais da API
-  - NF agora alimenta o financeiro real com rastreabilidade por anexo
-  - folha mensal fica operacional no frontend e integrada ao backend já protegido contra duplicidade
-- pendências:
-  - aplicar `npm run db:push` com `DATABASE_URL` para materializar ajustes de schema pendentes
-  - revisar performance do bundle do client se quisermos reduzir o warning de chunk > 500 kB
-  - partir para a fase final de deploy/smoke test no Coolify
-
-## Handoff
-- agente: Codex
-- área: deploy
-- arquivos alterados:
-  - `Dockerfile`
-  - `README.md`
-  - `docs/coolify-deploy-playbook.md`
-- resumo:
-  - otimizado o container de runtime para instalar apenas dependências de produção
-  - documentado playbook objetivo de deploy no Coolify, incluindo ordem correta de subida, envs, `db:push` e smoke test
-  - confirmado bloqueio atual: o workspace não possui `.env` nem `DATABASE_URL`, então a aplicação do schema no banco não pode ser executada daqui
-- impacto:
-  - imagem final tende a ficar mais enxuta
-  - o procedimento de deploy agora está fechado e rastreável
-  - o único passo restante dependente de infraestrutura é conectar o app ao PostgreSQL e rodar `db:push`
-- pendências:
-  - obter `DATABASE_URL` do PostgreSQL do Coolify
-  - rodar `npm run db:push`
-  - executar o smoke test pós-deploy no domínio final
-
-## Handoff
-- agente: Codex
-- área: banco / deploy
-- arquivos alterados:
-  - `.env`
-  - `docs/execution-checklist.md`
-  - `docs/worklog.md`
-- resumo:
-  - `.env` apontado para o PostgreSQL interno criado no Coolify
-  - `NODE_ENV=production` e `PORT=5000` adicionados ao ambiente local do projeto
-  - `npm run db:push` executado com sucesso contra o banco do Coolify
-  - `npm run check` e `npm run build` validados após a aplicação do schema
-- impacto:
-  - o backend agora já tem banco real configurado para a VPS
-  - a fase de deploy deixou de estar bloqueada por ausência de banco/schema
-  - falta apenas conectar a aplicação ao mesmo ambiente no painel do Coolify e concluir o smoke test
-- pendências:
-  - criar a application no projeto `app-afsilva`
-  - configurar envs equivalentes no painel do Coolify
-  - configurar healthcheck, volume `/app/uploads`, domínio e SSL
-
-## Handoff
-- agente: Codex
-- área: UX de faturamento / leitura histórica
-- arquivos alterados:
-  - `client/src/pages/Invoices.tsx`
-  - `client/src/pages/Dashboard.tsx`
-- resumo:
-  - corrigido o comportamento confuso pós-cadastro de NF: a tela agora troca automaticamente para a competência e quinzena da nota recém-salva
-  - adicionado seletor de mês no dashboard para leitura de janeiro/fevereiro/março e demais competências históricas
-  - validado com `npm run check` e `npm run build`
-- impacto:
-  - a NF recém-cadastrada deixa de parecer "sumida" quando a competência cadastrada é diferente do mês atual
-  - o dashboard deixa de ficar preso ao mês corrente, o que é essencial para retroalimentar o histórico da empresa
-- pendências:
-  - redeploy da aplicação no Coolify para publicar este ajuste
-  - testar cadastro de NF retroativa e conferir a troca automática de filtro
+  - Gemini deve seguir este guia ao concluir o redesign e registrar no handoff o que exige revisão antes do redeploy
