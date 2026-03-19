@@ -34,15 +34,15 @@ test.describe.serial("UI smoke", () => {
 
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("heading", { name: /Painel Operacional/i })).toBeVisible();
-    await expect(page.getByText("Meu Perfil")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Meu Perfil" })).toBeVisible();
 
-    await page.getByText("Meu Perfil").click();
+    await page.getByRole("link", { name: "Meu Perfil" }).click();
     await expect(page).toHaveURL(/\/profile$/);
     await expect(page.getByRole("heading", { name: /Meu Perfil/i })).toBeVisible();
     await page.getByRole("button", { name: /Salvar Perfil/i }).click();
     await expect(page.getByText(/Perfil atualizado/i)).toBeVisible();
 
-    await page.getByText("Empresa").click();
+    await page.getByRole("link", { name: "Empresa" }).click();
     await expect(page).toHaveURL(/\/company-profile$/);
     await expect(page.getByRole("heading", { name: /Perfil da Empresa/i })).toBeVisible();
     await page.getByRole("button", { name: /Salvar Configurações/i }).click();
@@ -59,7 +59,7 @@ test.describe.serial("UI smoke", () => {
         password: e2eEnv.adminPassword(),
       });
 
-      await page.getByText("Funcionários").click();
+      await page.getByRole("link", { name: "Funcionários" }).click();
       await expect(page).toHaveURL(/\/employees$/);
       await expect(page.getByRole("heading", { name: /Recursos Humanos/i })).toBeVisible();
 
@@ -90,12 +90,12 @@ test.describe.serial("UI smoke", () => {
 
       await expect(page).toHaveURL(/\/loadings$/);
       await expect(page.getByRole("heading", { name: /Operações de Carga/i })).toBeVisible();
-      await expect(page.getByText("Meu Perfil")).toBeVisible();
-      await expect(page.getByText("Cargas")).toBeVisible();
-      await expect(page.getByText("Financeiro")).toHaveCount(0);
-      await expect(page.getByText("Empresa")).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Meu Perfil" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Cargas" })).toBeVisible();
+      await expect(page.getByRole("link", { name: "Financeiro" })).toHaveCount(0);
+      await expect(page.getByRole("link", { name: "Empresa" })).toHaveCount(0);
 
-      await page.getByText("Meu Perfil").click();
+      await page.getByRole("link", { name: "Meu Perfil" }).click();
       await expect(page).toHaveURL(/\/profile$/);
       await expect(page.getByRole("heading", { name: /Meu Perfil/i })).toBeVisible();
     } finally {
