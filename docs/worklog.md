@@ -119,3 +119,28 @@
 - pendências:
   - redeployar a versão com o hotfix `ceb573f` antes da execução final da suíte publicada
   - após o redeploy, rodar `api-smoke` e depois `ui-smoke` contra a URL pública
+
+
+## Handoff
+- agente: Codex
+- área: backend / shared / frontend funcional / qa
+- arquivos alterados:
+  - `shared/routes.ts`
+  - `server/storage.ts`
+  - `server/routes.ts`
+  - `client/src/hooks/use-invoices.ts`
+  - `client/src/pages/Invoices.tsx`
+  - `e2e/api.smoke.spec.ts`
+  - `docs/worklog.md`
+- resumo:
+  - adicionada exclusão de nota fiscal com remoção consistente do lançamento financeiro e do anexo vinculado
+  - corrigida a regra de alerta de NF pendente no dashboard para só alertar quando houver receita no período sem nota fiscal correspondente
+  - alinhada a tela de Notas Fiscais ao mesmo recorte mensal do dashboard, abrindo por padrão na competência atual e deixando acesso explícito ao histórico completo
+  - reforçada a suíte de API para validar que o total de NF do dashboard bate com a soma real das notas da competência consultada
+- impacto:
+  - o admin deixa de depender de ajuste manual em banco para remover NF cadastrada incorretamente
+  - a leitura entre Dashboard e módulo de NF passa a ser coerente no mês atual, reduzindo falso diagnóstico de valor sumido
+  - regressões de soma entre dashboard e livro fiscal passam a ser detectadas no smoke test
+- pendências:
+  - executar `npm run check` e `npm run build`
+  - após publicar, rodar novamente a suíte Playwright contra a URL publicada

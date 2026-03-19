@@ -189,6 +189,15 @@ export const api = {
         403: errorSchemas.forbidden,
       },
     },
+    remove: {
+      method: 'DELETE' as const,
+      path: '/api/invoices/:id',
+      responses: {
+        200: z.object({ success: z.literal(true) }),
+        403: errorSchemas.forbidden,
+        404: errorSchemas.notFound,
+      },
+    },
     extract: {
       method: 'POST' as const,
       path: '/api/invoices/extract',

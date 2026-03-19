@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Layout } from "@/components/Layout";
-import { useCreateInvoice, useExtractInvoiceDraft, useInvoices } from "@/hooks/use-invoices";
+import { useCreateInvoice, useDeleteInvoice, useExtractInvoiceDraft, useInvoices } from "@/hooks/use-invoices";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import {
@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, FileText, Link2, Plus, Upload, Search, Calendar, Filter, X, FileCheck, CheckCircle2, Clock } from "lucide-react";
+import { AlertCircle, FileText, Link2, Plus, Upload, Calendar, Filter, X, FileCheck, CheckCircle2, Clock, Trash2, ShieldCheck, Info } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { insertInvoiceSchema, INVOICE_PERIODS, INVOICE_STATUS } from "@shared/schema";
@@ -316,13 +316,29 @@ function getInvoicePeriodLabel(periodType: string) {
 }
 
 export default function Invoices() {
+  const currentMonth = format(new Date(), "yyyy-MM");
   const [open, setOpen] = useState(false);
-  const [competenceMonth, setCompetenceMonth] = useState("");
+  const [competenceMonth, setCompetenceMonth] = useState(currentMonth);
   const [periodType, setPeriodType] = useState<"ALL" | "A_01_15" | "B_16_END">("ALL");
+  const deleteInvoiceMutation = useDeleteInvoice();
   const { data: invoices, isLoading } = useInvoices({
     competenceMonth: competenceMonth || undefined,
     periodType: periodType === "ALL" ? undefined : periodType,
   });
+  const isCurrentScope = competenceMonth === currentMonth && periodType === "ALL";
+
+  function handleDeleteInvoice(invoiceId: number, invoiceNumber: string | null) {
+    const invoiceLabel = invoiceNumber ? `NF ${invoiceNumber}` : `nota fiscal #${invoiceId}`;
+    const confirmed = window.confirm(
+      `Excluir ${invoiceLabel}? Essa ação remove a NF, o anexo e a receita vinculada no financeiro.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    deleteInvoiceMutation.mutate(invoiceId);
+  }
 
   const totals = useMemo(() => {
     const total = invoices?.reduce((sum, invoice) => sum + Number(invoice.amount), 0) ?? 0;
@@ -433,14 +449,18 @@ export default function Invoices() {
           variant="outline"
           className="font-bold text-xs uppercase tracking-wider border-border/80 hover:bg-muted"
           onClick={() => {
-            setCompetenceMonth("");
+            setCompetenceMonth(isCurrentScope ? "" : currentMonth);
             setPeriodType("ALL");
           }}
         >
           <X className="w-4 h-4 mr-2" />
-          Limpar Filtros
+          {isCurrentScope ? "Ver Histórico Completo" : "Voltar ao Mês Atual"}
         </Button>
       </div>
+
+      <p className="mb-4 text-xs font-medium text-muted-foreground px-1">
+        O dashboard principal usa esta mesma competência. Por padrão, este módulo abre no mês atual para manter os valores fiscais alinhados.
+      </p>
 
       <Card className="border-border/80 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -453,13 +473,14 @@ export default function Invoices() {
                 <TableHead className="font-semibold text-xs uppercase tracking-wider py-4 text-center">Período Fiscal</TableHead>
                 <TableHead className="font-semibold text-xs uppercase tracking-wider py-4">Situação</TableHead>
                 <TableHead className="font-semibold text-xs uppercase tracking-wider py-4">Documento</TableHead>
-                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider py-4 pr-6">Valor Líquido</TableHead>
+                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider py-4">Valor Líquido</TableHead>
+                <TableHead className="text-right font-semibold text-xs uppercase tracking-wider py-4 pr-6">Ações</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-20 text-center">
+                  <TableCell colSpan={8} className="py-20 text-center">
                     <div className="flex flex-col items-center gap-2">
                         <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                         <span className="text-sm font-medium text-muted-foreground">Localizando registros fiscais...</span>
@@ -468,7 +489,7 @@ export default function Invoices() {
                 </TableRow>
               ) : invoices?.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="py-24 text-center">
+                  <TableCell colSpan={8} className="py-24 text-center">
                     <div className="bg-muted/20 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6">
                       <FileText className="w-10 h-10 text-muted-foreground opacity-40" />
                     </div>
@@ -527,8 +548,20 @@ export default function Invoices() {
                         Ver Anexo
                       </a>
                     </TableCell>
-                    <TableCell className="text-right font-mono font-bold text-foreground py-4 pr-6">
+                    <TableCell className="text-right font-mono font-bold text-foreground py-4">
                       {formatCurrency(Number(invoice.amount))}
+                    </TableCell>
+                    <TableCell className="py-4 pr-6 text-right">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-9 font-bold border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                        disabled={deleteInvoiceMutation.isPending}
+                        onClick={() => handleDeleteInvoice(invoice.id, invoice.number)}
+                      >
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Excluir
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))
@@ -564,5 +597,3 @@ export default function Invoices() {
   );
 }
 
-// Ensure necessary imports are consistent
-import { ShieldCheck, Info } from "lucide-react";

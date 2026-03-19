@@ -61,6 +61,48 @@ export function useCreateInvoice() {
   });
 }
 
+export function useDeleteInvoice() {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (invoiceId: number) => {
+      const res = await fetch(api.invoices.remove.path.replace(":id", String(invoiceId)), {
+        method: api.invoices.remove.method,
+        credentials: "include",
+      });
+
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        throw new Error(error?.message || "Failed to delete invoice");
+      }
+
+      return api.invoices.remove.responses[200].parse(await res.json());
+    },
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [api.invoices.list.path] }),
+        queryClient.invalidateQueries({ queryKey: [api.dashboard.stats.path] }),
+        queryClient.invalidateQueries({ queryKey: [api.finance.list.path] }),
+        queryClient.refetchQueries({ queryKey: [api.invoices.list.path], type: "active" }),
+        queryClient.refetchQueries({ queryKey: [api.dashboard.stats.path], type: "active" }),
+        queryClient.refetchQueries({ queryKey: [api.finance.list.path], type: "active" }),
+      ]);
+      toast({
+        title: "Nota fiscal excluída",
+        description: "A nota fiscal, o anexo e a receita vinculada foram removidos.",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Erro ao excluir nota fiscal",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+}
+
 export function useUploadAttachment() {
   const { toast } = useToast();
 

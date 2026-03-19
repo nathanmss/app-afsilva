@@ -33,6 +33,7 @@ export interface IStorage {
   ): Promise<(Invoice & { attachment: Attachment })[]>;
   createInvoice(data: any): Promise<Invoice>;
   createInvoiceWithFinance(data: any): Promise<Invoice>;
+  deleteInvoice(tenantId: number, invoiceId: number): Promise<{ status: "deleted"; attachmentStoragePath?: string } | { status: "not_found" }>;
 
   // Employees
   getEmployees(tenantId: number): Promise<Employee[]>;
@@ -212,6 +213,51 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async deleteInvoice(tenantId: number, invoiceId: number): Promise<{ status: "deleted"; attachmentStoragePath?: string } | { status: "not_found" }> {
+    return db.transaction(async (tx) => {
+      const [invoiceRow] = await tx.select({
+        id: invoices.id,
+        financeTransactionId: invoices.financeTransactionId,
+        attachmentId: invoices.attachmentId,
+        attachmentStoragePath: attachments.storagePath,
+      })
+        .from(invoices)
+        .leftJoin(attachments, eq(invoices.attachmentId, attachments.id))
+        .where(and(
+          eq(invoices.id, invoiceId),
+          eq(invoices.tenantId, tenantId),
+        ));
+
+      if (!invoiceRow) {
+        return { status: "not_found" } as const;
+      }
+
+      await tx.delete(invoices).where(and(
+        eq(invoices.id, invoiceId),
+        eq(invoices.tenantId, tenantId),
+      ));
+
+      if (invoiceRow.financeTransactionId) {
+        await tx.delete(financeTransactions).where(and(
+          eq(financeTransactions.id, invoiceRow.financeTransactionId),
+          eq(financeTransactions.tenantId, tenantId),
+        ));
+      }
+
+      if (invoiceRow.attachmentId) {
+        await tx.delete(attachments).where(and(
+          eq(attachments.id, invoiceRow.attachmentId),
+          eq(attachments.tenantId, tenantId),
+        ));
+      }
+
+      return {
+        status: "deleted" as const,
+        attachmentStoragePath: invoiceRow.attachmentStoragePath ?? undefined,
+      };
+    });
+  }
+
   // Employees
   async getEmployees(tenantId: number): Promise<Employee[]> {
     return await db.select().from(employees).where(eq(employees.tenantId, tenantId));
@@ -382,12 +428,17 @@ export class DatabaseStorage implements IStorage {
         eq(invoices.competenceMonth, targetMonth),
       ));
 
+    const incomeValue = Number(income[0]?.value || 0);
+    const expensesValue = Number(expenses[0]?.value || 0);
+    const invoiceCountValue = Number(invoiceCount[0]?.count || 0);
+    const currentInvoiceTotal = Number(invoiceTotal[0]?.value || 0);
+
     return {
-      income: Number(income[0]?.value || 0),
-      expenses: Number(expenses[0]?.value || 0),
-      balance: Number(income[0]?.value || 0) - Number(expenses[0]?.value || 0),
-      missingInvoice: Number(invoiceCount[0]?.count || 0) === 0,
-      currentInvoiceTotal: Number(invoiceTotal[0]?.value || 0),
+      income: incomeValue,
+      expenses: expensesValue,
+      balance: incomeValue - expensesValue,
+      missingInvoice: incomeValue > 0 && invoiceCountValue === 0,
+      currentInvoiceTotal,
     };
   }
   

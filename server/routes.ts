@@ -372,6 +372,27 @@ export async function registerRoutes(
     const inv = await storage.createInvoiceWithFinance({ ...data, tenantId });
     res.status(201).json(inv);
   }));
+  app.delete(api.invoices.remove.path.replace(":id", ":id"), requireRoles("ADMIN"), asyncHandler(async (req, res) => {
+    const invoiceId = Number(req.params.id);
+    if (!Number.isInteger(invoiceId) || invoiceId <= 0) {
+      throw new HttpError(400, "Invalid invoice id");
+    }
+
+    const result = await storage.deleteInvoice(getCurrentUser(req).tenantId, invoiceId);
+    if (result.status === "not_found") {
+      throw new HttpError(404, "Nota fiscal não encontrada");
+    }
+
+    if (result.attachmentStoragePath?.startsWith("/uploads/")) {
+      const filename = path.basename(result.attachmentStoragePath);
+      const fullPath = path.join(uploadDir, filename);
+      if (fs.existsSync(fullPath)) {
+        fs.unlinkSync(fullPath);
+      }
+    }
+
+    res.json({ success: true });
+  }));
 
   // Employees
   app.get(api.employees.list.path, requireRoles("ADMIN"), asyncHandler(async (req, res) => {

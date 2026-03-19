@@ -82,12 +82,14 @@ test.describe.serial("API smoke", () => {
     const responses = await Promise.all(checks);
     responses.forEach((response) => expect(response.ok()).toBeTruthy());
 
-    api.dashboard.stats.responses[200].parse(await responses[0].json());
+    const dashboardStats = api.dashboard.stats.responses[200].parse(await responses[0].json());
     api.dashboard.ranking.responses[200].parse(await responses[1].json());
     api.companyProfile.get.responses[200].parse(await responses[2].json());
     api.userProfile.get.responses[200].parse(await responses[3].json());
     api.finance.list.responses[200].parse(await responses[4].json());
-    api.invoices.list.responses[200].parse(await responses[5].json());
+    const currentMonthInvoices = api.invoices.list.responses[200].parse(await responses[5].json());
+    const invoiceSum = currentMonthInvoices.reduce((sum, invoice) => sum + Number(invoice.amount), 0);
+    expect(dashboardStats.currentInvoiceTotal).toBeCloseTo(invoiceSum, 2);
     api.employees.list.responses[200].parse(await responses[6].json());
     api.employees.getPayments.responses[200].parse(await responses[7].json());
     api.vehicles.list.responses[200].parse(await responses[8].json());
