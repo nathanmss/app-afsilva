@@ -10,7 +10,7 @@ import {
 
 test.describe.serial("API smoke", () => {
   let adminRequest: APIRequestContext;
-  let operatorRequest: APIRequestContext;
+  let operatorRequest: APIRequestContext | undefined;
   let currentProfile: any;
   let currentCompanyProfile: any;
   let tempEmployeeId: number | null = null;
@@ -36,7 +36,10 @@ test.describe.serial("API smoke", () => {
     await deleteEmployeeIfPossible(adminRequest, tempEmployeeId);
     await logoutByApi(adminRequest);
     await adminRequest.dispose();
-    await operatorRequest?.dispose();
+    if (operatorRequest) {
+      await operatorRequest.dispose();
+      operatorRequest = undefined;
+    }
   });
 
   test("health and admin session endpoints respond", async () => {
@@ -151,6 +154,7 @@ test.describe.serial("API smoke", () => {
 
     await logoutByApi(operatorRequest);
     await operatorRequest.dispose();
+    operatorRequest = undefined;
 
     const deleteResponse = await adminRequest.delete(api.employees.remove.path.replace(":id", String(createdEmployee.id)));
     expect(deleteResponse.status()).toBe(200);
