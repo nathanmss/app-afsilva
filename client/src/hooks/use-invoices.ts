@@ -37,10 +37,15 @@ export function useCreateInvoice() {
       }
       return api.invoices.create.responses[201].parse(await res.json());
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: [api.invoices.list.path] });
-      queryClient.invalidateQueries({ queryKey: [api.dashboard.stats.path] });
-      queryClient.invalidateQueries({ queryKey: [api.finance.list.path] });
+    onSuccess: async () => {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: [api.invoices.list.path] }),
+        queryClient.invalidateQueries({ queryKey: [api.dashboard.stats.path] }),
+        queryClient.invalidateQueries({ queryKey: [api.finance.list.path] }),
+        queryClient.refetchQueries({ queryKey: [api.invoices.list.path], type: "active" }),
+        queryClient.refetchQueries({ queryKey: [api.dashboard.stats.path], type: "active" }),
+        queryClient.refetchQueries({ queryKey: [api.finance.list.path], type: "active" }),
+      ]);
       toast({
         title: "Nota fiscal cadastrada",
         description: "A nota fiscal e a receita vinculada foram registradas.",

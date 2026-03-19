@@ -56,10 +56,10 @@ Legenda:
 
 ## Fase 5 — Rebranding AF Silva Transportes
 
-- [ ] Substituir nome visual residual de `NextGate` / `FleetMgr`
-- [ ] Revisar manifest e metadados
+- [x] Substituir nome visual residual de `NextGate` / `FleetMgr`
+- [x] Revisar manifest e metadados
 - [ ] Revisar favicon, nome do app e identidade visual
-- [ ] Validar impacto técnico do rebranding em produção
+- [x] Validar impacto técnico do rebranding em produção
 
 ## Fase 6 — Deploy no Coolify
 

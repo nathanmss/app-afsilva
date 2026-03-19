@@ -6,6 +6,7 @@ import {
   Users, 
   Truck, 
   Package, 
+  Building2,
   LogOut,
   Menu,
   ChevronRight
@@ -21,6 +22,7 @@ const links = [
   { href: "/", label: "Painel", icon: LayoutDashboard },
   { href: "/finance", label: "Financeiro", icon: Wallet },
   { href: "/invoices", label: "Notas Fiscais", icon: FileText },
+  { href: "/company-profile", label: "Empresa", icon: Building2 },
   { href: "/loadings", label: "Cargas", icon: Package },
   { href: "/vehicles", label: "Veículos", icon: Truck },
   { href: "/employees", label: "Funcionários", icon: Users },

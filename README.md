@@ -1,4 +1,4 @@
-# NextGate Log
+# AF Silva Transportes
 
 Sistema web para gestão de transportadora com dashboard, finanças, faturas, colaboradores, veículos e carregamentos.
 
@@ -74,7 +74,7 @@ Guia operacional detalhado:
 ## Usuário inicial
 
 - Em ambiente de desenvolvimento, se o seed estiver ativo e não existir usuário:
-  - email: `admin@nextgatelog.local`
+  - email: `admin@afsilvatransportes.local`
   - senha: `admin123`
 - Em produção, o seed só cria usuário se `SEED_ADMIN_PASSWORD` for definido.
 - Funcionários cadastrados pelo admin recebem acesso de operador:

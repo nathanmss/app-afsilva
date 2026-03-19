@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { 
   insertUserSchema, 
   insertTenantSchema,
+  updateTenantProfileSchema,
   insertCategorySchema,
   insertFinanceTransactionSchema,
   insertInvoiceSchema,
@@ -10,7 +11,7 @@ import {
   insertVehicleSchema,
   manageLoadingSchema,
   insertLoadingSchema,
-  users, categories, financeTransactions, invoices, employees, employeePayments, vehicles, loadings, attachments,
+  users, tenants, categories, financeTransactions, invoices, employees, employeePayments, vehicles, loadings, attachments,
   type AuthUser,
 } from './schema';
 
@@ -98,6 +99,27 @@ export const api = {
           estimatedRevenue: z.number(),
         })),
         403: errorSchemas.forbidden,
+      },
+    },
+  },
+  companyProfile: {
+    get: {
+      method: 'GET' as const,
+      path: '/api/company-profile',
+      responses: {
+        200: z.custom<typeof tenants.$inferSelect>(),
+        403: errorSchemas.forbidden,
+        404: errorSchemas.notFound,
+      },
+    },
+    update: {
+      method: 'PUT' as const,
+      path: '/api/company-profile',
+      input: updateTenantProfileSchema,
+      responses: {
+        200: z.custom<typeof tenants.$inferSelect>(),
+        403: errorSchemas.forbidden,
+        404: errorSchemas.notFound,
       },
     },
   },

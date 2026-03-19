@@ -27,16 +27,38 @@
   - Providenciar o logo oficial em alta resolução para substituir o favicon temporário no cabeçalho da Sidebar.
 
 ## Handoff
-- agente: Codex
-- área: shared / deploy / docs
+- agente: Gemini
+- área: ui / frontend
 - arquivos alterados:
-  - `docs/gemini-alignment.md`
-  - `specs.md`
+  - `client/src/hooks/use-company-profile.ts`
+  - `client/src/pages/CompanyProfile.tsx`
+  - `client/src/App.tsx`
+  - `client/src/components/Sidebar.tsx`
+- resumo:
+  - **Módulo Perfil da Empresa:** Implementada a interface completa para gestão dos dados institucionais e parâmetros de margem operacional (`urbanPercent`, `tripPercent`).
+  - **Controle de Acesso:** Rota e link na sidebar restritos exclusivamente para o perfil `ADMIN`.
+  - **Integração:** Utilizado o contrato existente do backend (`GET/PUT /api/company-profile`) sem alterações estruturais.
+  - **UX:** Formulário robusto com validação Zod, feedbacks de salvamento e alertas sobre o impacto dos percentuais no cálculo de receita.
+- impacto:
+  - Agora o administrador pode configurar a cidade base e os percentuais de cálculo de romaneio diretamente pela interface, eliminando a necessidade de ajustes via banco de dados.
+- pendências:
+  - Nenhuma. O módulo está funcional e segue o novo padrão visual robusto.
+
+## Handoff
+- agente: Codex
+- área: frontend funcional / revisão técnica
+- arquivos alterados:
+  - `client/src/components/Sidebar.tsx`
+  - `client/src/hooks/use-company-profile.ts`
+  - `client/src/pages/CompanyProfile.tsx`
   - `docs/worklog.md`
 - resumo:
-  - criado guia operacional específico para o Gemini com regras de handoff, limites de atuação e sequência correta de deploy neste ambiente
-  - adicionada referência curta em `specs.md` para que o guia faça parte da leitura base do projeto
+  - corrigido o acesso real ao módulo Perfil da Empresa adicionando o link faltante na sidebar do admin
+  - ajustado o hook para consumir o contrato compartilhado explicitamente, com parse de resposta e invalidação consistente
+  - corrigida a semântica dos percentuais na UI: a tela mostra porcentagem visual ao admin, mas converte para o formato fracionário usado internamente pelo backend
 - impacto:
-  - frontend e backend passam a usar a mesma regra de publicação, reduzindo redeploy prematuro e conflito em arquivos compartilhados
+  - o módulo fica realmente navegável pelo admin
+  - evita gravação incorreta de percentuais 100x maiores no cálculo dos romaneios
+  - a revisão final fica rastreável antes do redeploy
 - pendências:
-  - Gemini deve seguir este guia ao concluir o redesign e registrar no handoff o que exige revisão antes do redeploy
+  - executar smoke test pós-deploy incluindo edição do Perfil da Empresa e criação de romaneio com os percentuais atualizados

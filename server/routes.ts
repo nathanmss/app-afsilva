@@ -78,7 +78,7 @@ export async function registerRoutes(
 
   app.use(session({
     store: new pgSession({ pool, createTableIfMissing: true }),
-    name: "nextgate.sid",
+    name: "afsilva.sid",
     secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
@@ -267,6 +267,33 @@ export async function registerRoutes(
     res.json(ranking);
   }));
 
+  // Company Profile
+  app.get(api.companyProfile.get.path, requireRoles("ADMIN"), asyncHandler(async (req, res) => {
+    const tenant = await storage.getTenant(getCurrentUser(req).tenantId);
+    if (!tenant) {
+      throw new HttpError(404, "Company profile not found");
+    }
+    res.json(tenant);
+  }));
+
+  app.put(api.companyProfile.update.path, requireRoles("ADMIN"), asyncHandler(async (req, res) => {
+    const tenantId = getCurrentUser(req).tenantId;
+    const data = api.companyProfile.update.input.parse(req.body);
+
+    const tenant = await storage.updateTenant(tenantId, {
+      ...data,
+      city: data.city?.trim() || null,
+      state: data.state?.trim().toUpperCase() || null,
+      updatedAt: new Date(),
+    });
+
+    if (!tenant) {
+      throw new HttpError(404, "Company profile not found");
+    }
+
+    res.json(tenant);
+  }));
+
   // Finance
   app.get(api.finance.list.path, requireRoles("ADMIN"), asyncHandler(async (req, res) => {
     const txs = await storage.getTransactions(getCurrentUser(req).tenantId, req.query as any);
@@ -307,27 +334,7 @@ export async function registerRoutes(
       throw new HttpError(400, "Invalid attachment for tenant");
     }
 
-    const inv = await storage.createInvoice({ ...data, tenantId });
-    let invoiceCategory = (await storage.getCategories(tenantId)).find(c => c.name === "Invoice");
-    if (!invoiceCategory) {
-      invoiceCategory = await storage.createCategory({
-        tenantId,
-        name: "Invoice",
-        defaultType: "INCOME",
-        isSystem: true,
-      });
-    }
-
-    await storage.createTransaction({
-      tenantId,
-      type: "INCOME",
-      categoryId: invoiceCategory.id,
-      date: new Date(inv.issueDate),
-      amount: inv.amount,
-      description: `Invoice ${inv.number || ""}`,
-      invoiceId: inv.id,
-      attachmentId: inv.attachmentId,
-    });
+    const inv = await storage.createInvoiceWithFinance({ ...data, tenantId });
     res.status(201).json(inv);
   }));
 
@@ -517,7 +524,7 @@ export async function registerRoutes(
   // SEED DATA (idempotent)
   const shouldSeed = process.env.SEED_DATA !== "false";
   if (shouldSeed) {
-    const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || "admin@nextgatelog.local";
+    const seedAdminEmail = process.env.SEED_ADMIN_EMAIL || "admin@afsilvatransportes.local";
     const seedAdminPassword = process.env.SEED_ADMIN_PASSWORD;
 
     try {

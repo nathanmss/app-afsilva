@@ -12,6 +12,7 @@ export interface IStorage {
   getUserByCnpj(cnpj: string): Promise<User | undefined>;
   getUser(id: number): Promise<User | undefined>;
   getTenant(id: number): Promise<Tenant | undefined>;
+  updateTenant(id: number, data: Partial<Tenant>): Promise<Tenant | undefined>;
   createTenant(name: string): Promise<Tenant>; // Minimal for seed
   createUser(user: InsertUser): Promise<User>;
 
@@ -30,6 +31,7 @@ export interface IStorage {
     filters?: { competenceMonth?: string; periodType?: string },
   ): Promise<(Invoice & { attachment: Attachment })[]>;
   createInvoice(data: any): Promise<Invoice>;
+  createInvoiceWithFinance(data: any): Promise<Invoice>;
 
   // Employees
   getEmployees(tenantId: number): Promise<Employee[]>;
@@ -82,6 +84,10 @@ export class DatabaseStorage implements IStorage {
   }
   async getTenant(id: number): Promise<Tenant | undefined> {
     const [tenant] = await db.select().from(tenants).where(eq(tenants.id, id));
+    return tenant;
+  }
+  async updateTenant(id: number, data: Partial<Tenant>): Promise<Tenant | undefined> {
+    const [tenant] = await db.update(tenants).set(data).where(eq(tenants.id, id)).returning();
     return tenant;
   }
   async createTenant(name: string): Promise<Tenant> {
@@ -157,6 +163,47 @@ export class DatabaseStorage implements IStorage {
   async createInvoice(data: any): Promise<Invoice> {
     const [inv] = await db.insert(invoices).values(data).returning();
     return inv;
+  }
+  async createInvoiceWithFinance(data: any): Promise<Invoice> {
+    return db.transaction(async (tx) => {
+      const [existingCategory] = await tx.select()
+        .from(categories)
+        .where(and(
+          eq(categories.tenantId, data.tenantId),
+          eq(categories.name, "Invoice"),
+        ))
+        .limit(1);
+
+      const invoiceCategory = existingCategory ?? (
+        await tx.insert(categories).values({
+          tenantId: data.tenantId,
+          name: "Invoice",
+          defaultType: "INCOME",
+          isSystem: true,
+        }).returning()
+      )[0];
+
+      const [createdInvoice] = await tx.insert(invoices).values(data).returning();
+      const [createdTransaction] = await tx.insert(financeTransactions).values({
+        tenantId: data.tenantId,
+        type: "INCOME",
+        categoryId: invoiceCategory.id,
+        date: data.issueDate,
+        amount: data.amount,
+        description: createdInvoice.number
+          ? `Invoice ${createdInvoice.number}`
+          : "Invoice",
+        invoiceId: createdInvoice.id,
+        attachmentId: createdInvoice.attachmentId,
+      }).returning();
+
+      const [linkedInvoice] = await tx.update(invoices)
+        .set({ financeTransactionId: createdTransaction.id })
+        .where(eq(invoices.id, createdInvoice.id))
+        .returning();
+
+      return linkedInvoice;
+    });
   }
 
   // Employees
@@ -278,25 +325,19 @@ export class DatabaseStorage implements IStorage {
       .from(financeTransactions)
       .where(and(eq(financeTransactions.tenantId, tenantId), eq(financeTransactions.type, 'EXPENSE'), dateFilter));
 
-    // Current half-month invoice status (A_01_15 / B_16_END)
-    const now = new Date();
-    const targetMonth = now.toISOString().slice(0, 7);
-    const targetPeriodType = now.getDate() <= 15 ? "A_01_15" : "B_16_END";
+    const targetMonth = month || new Date().toISOString().slice(0, 7);
     const invoiceCount = await db.select({ count: sql<number>`count(*)` })
       .from(invoices)
       .where(and(
         eq(invoices.tenantId, tenantId),
         eq(invoices.competenceMonth, targetMonth),
-        eq(invoices.periodType, targetPeriodType),
       ));
 
-    // Current half-month invoice total
     const invoiceTotal = await db.select({ value: sql<number>`sum(${invoices.amount})` })
       .from(invoices)
       .where(and(
         eq(invoices.tenantId, tenantId),
         eq(invoices.competenceMonth, targetMonth),
-        eq(invoices.periodType, targetPeriodType),
       ));
 
     return {

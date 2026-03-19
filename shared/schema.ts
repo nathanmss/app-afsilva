@@ -209,6 +209,13 @@ export const employeePaymentRelations = relations(employeePayments, ({ one }) =>
 
 // === SCHEMAS ===
 export const insertTenantSchema = createInsertSchema(tenants).omit({ id: true, createdAt: true, updatedAt: true });
+export const updateTenantProfileSchema = z.object({
+  name: z.string().trim().min(1, "Informe o nome da empresa"),
+  city: z.string().trim().max(120, "Cidade muito longa").optional().nullable(),
+  state: z.string().trim().max(2, "Use a UF com até 2 caracteres").optional().nullable(),
+  urbanPercent: z.string().trim().min(1, "Informe o percentual urbano"),
+  tripPercent: z.string().trim().min(1, "Informe o percentual de viagem"),
+});
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, updatedAt: true })
   .extend({

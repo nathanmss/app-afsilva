@@ -2,7 +2,7 @@
 
 ## Objetivo
 
-Subir o `nextgate-log` em produção no Coolify com PostgreSQL, volume persistente de uploads e smoke test mínimo.
+Subir o app `AF Silva Transportes` em produção no Coolify, usando a pasta/repositório `nextgate-log`, com PostgreSQL, volume persistente de uploads e smoke test mínimo.
 
 ## Pré-requisitos
 
@@ -24,7 +24,7 @@ PORT=5000
 
 ```env
 SEED_DATA=true
-SEED_ADMIN_EMAIL=admin@nextgatelog.local
+SEED_ADMIN_EMAIL=admin@afsilvatransportes.local
 SEED_ADMIN_PASSWORD=defina-uma-senha-forte
 ```
 

@@ -30,7 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Users, Plus, ShieldCheck, KeyRound, CalendarDays, Wallet, Briefcase, IdentificationCard, Banknote, UserCheck } from "lucide-react";
+import { Users, Plus, ShieldCheck, KeyRound, CalendarDays, Wallet, Briefcase, IdCard, Banknote, UserCheck } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { EMPLOYEE_STATUS, insertEmployeePaymentSchema, insertEmployeeSchema } from "@shared/schema";
@@ -427,7 +427,7 @@ export default function Employees() {
                 <CardContent className="pt-6 space-y-4 text-sm">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-muted-foreground">
-                       <IdentificationCard className="w-4 h-4" />
+                       <IdCard className="w-4 h-4" />
                        <span className="text-xs font-semibold uppercase tracking-wider">Documento</span>
                     </div>
                     <span className="font-mono text-xs font-bold text-foreground bg-muted px-2 py-0.5 rounded">
@@ -501,7 +501,7 @@ export default function Employees() {
                 <p className="font-medium opacity-90">Login automático via CPF. Senha inicial são os 4 últimos dígitos do documento.</p>
               </div>
               <div className="p-3 bg-white/5 rounded-lg border border-white/10 flex gap-3">
-                <IdentificationCard className="w-4 h-4 shrink-0 text-primary" />
+                <IdCard className="w-4 h-4 shrink-0 text-primary" />
                 <p className="font-medium opacity-90">O operador tem acesso restrito apenas ao módulo de cargas e romaneios.</p>
               </div>
               <div className="p-3 bg-white/5 rounded-lg border border-white/10 flex gap-3">

@@ -41,6 +41,12 @@ Aplicação web para gestão operacional e financeira de transportadora, com foc
 - Registrar mudanças relevantes em `docs/worklog.md`
 - Antes de cada bloco: ler `README.md`, `specs.md`, `AGENTS.md` e checar `git status`
 
+## Guia operacional para Gemini
+
+- para mudanças de frontend e rebranding, consultar `docs/gemini-alignment.md`
+- o deploy final deve acontecer uma única vez, depois que a UI estiver concluída e validada
+- qualquer necessidade de ajuste em contrato, backend, auth, schema ou deploy deve ser registrada antes no `docs/worklog.md`
+
 ## Estado técnico atual
 
 - `npm run check`: OK
@@ -60,9 +66,11 @@ Aplicação web para gestão operacional e financeira de transportadora, com foc
 - Loadings: cadastro, listagem e cálculo automático de receita estimada
 - Funcionários: cadastro com CPF e criação automática de login do operador
 - PWA com manifest e service worker
+- Perfil da Empresa com edição dos dados institucionais e percentuais operacionais
 
 ## Pendências prioritárias atuais
 
+- implementar página de Perfil da Empresa consumindo o contrato compartilhado
 - concluir fluxos de frontend faltantes para invoices e employee payments
 - alinhar rebranding técnico e visual para AF Silva Transportes
 - aplicar `npm run db:push` em ambiente com `DATABASE_URL`
