@@ -46,7 +46,7 @@ test.describe.serial("UI smoke", () => {
     await expect(page).toHaveURL(/\/company-profile$/);
     await expect(page.getByRole("heading", { name: /Perfil da Empresa/i })).toBeVisible();
     await page.getByRole("button", { name: /Salvar Configurações/i }).click();
-    await expect(page.getByText(/Perfil atualizado|Configurações/i)).toBeVisible();
+    await expect(page.getByText("Os dados da empresa foram salvos com sucesso.")).toBeVisible();
   });
 
   test("admin can delete a temporary employee from the UI", async ({ page }) => {
