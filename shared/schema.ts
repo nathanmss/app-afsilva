@@ -218,11 +218,13 @@ export const updateTenantProfileSchema = z.object({
 });
 export const updateUserProfileSchema = z.object({
   name: z.string().trim().min(1, "Informe o nome do usuário").max(120, "Nome muito longo"),
-  email: z.union([z.string().trim().email("E-mail inválido"), z.literal("")]).optional().transform((value) => {
-    if (value === undefined) return undefined;
-    const normalized = typeof value === "string" ? value.trim().toLowerCase() : value;
-    return normalized ? normalized : null;
-  }),
+  email: z.preprocess(
+    (value) => {
+      if (value === null || value === undefined) return "";
+      return typeof value === "string" ? value.trim().toLowerCase() : value;
+    },
+    z.union([z.string().email("E-mail inválido"), z.literal("")]),
+  ).transform((value) => (value ? value : null)),
 });
 export const insertUserSchema = createInsertSchema(users)
   .omit({ id: true, createdAt: true, updatedAt: true })
